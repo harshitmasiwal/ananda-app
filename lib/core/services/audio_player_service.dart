@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:audio_session/audio_session.dart';
 import '../models/bhajan_model.dart';
 import '../models/ringtone_model.dart';
 
-/// Singleton audio service: queue, shuffle, auto-advance.
+/// Singleton audio service: queue, shuffle, auto-advance, media notification.
 class AudioPlayerService {
   AudioPlayerService._();
   static final AudioPlayerService instance = AudioPlayerService._();
@@ -41,12 +42,12 @@ class AudioPlayerService {
   Duration get position => _player.position;
   bool get playing => _player.playing;
 
-  /// Call once at app startup.
+  /// Call once at app startup — AFTER JustAudioBackground.init().
   Future<void> init() async {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
 
-    // Auto-advance on track completion
+    // Auto-advance when a track completes
     _player.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
         _autoNext();
@@ -56,10 +57,6 @@ class AudioPlayerService {
 
   // ── Playback ───────────────────────────────────────────────────────────────
 
-  /// Play [bhajan] from [queue].
-  /// • Same track → toggles play/pause.
-  /// • [queue] replaces the current queue so sequential playback follows
-  ///   whatever list is visible (filtered category or "All").
   Future<void> playBhajan(BhajanModel bhajan,
       {List<BhajanModel>? queue}) async {
     if (currentBhajan?.id == bhajan.id) {
@@ -86,17 +83,39 @@ class AudioPlayerService {
     _currentBhajanCtrl.add(bhajan);
     try {
       await _player.stop();
-      await _player.setUrl(bhajan.audioUrl);
+      // MediaItem tag → populates the media notification
+      final source = AudioSource.uri(
+        Uri.parse(bhajan.audioUrl),
+        tag: MediaItem(
+          id: bhajan.id,
+          title: bhajan.title,
+          artist: bhajan.artist.isNotEmpty ? bhajan.artist : bhajan.category,
+          album: 'Ananda',
+          // Use first wallpaper as artwork — replace with dedicated icon if available
+          artUri: Uri.parse(
+            'https://res.cloudinary.com/dfbcf8uz/image/upload/w_300,h_300,c_fill,q_auto,f_auto/wallpaper_1',
+          ),
+        ),
+      );
+      await _player.setAudioSource(source);
       await _player.play();
-    } catch (_) {
-      // Swallow network errors silently
+    } catch (e) {
+      // Swallow network/format errors
     }
   }
 
   Future<void> playRingtone(RingtoneModel ringtone) async {
     try {
       await _player.stop();
-      await _player.setUrl(ringtone.audioUrl);
+      final source = AudioSource.uri(
+        Uri.parse(ringtone.audioUrl),
+        tag: MediaItem(
+          id: ringtone.id,
+          title: ringtone.title,
+          album: 'Ananda Ringtones',
+        ),
+      );
+      await _player.setAudioSource(source);
       await _player.play();
     } catch (_) {}
   }
@@ -136,7 +155,6 @@ class AudioPlayerService {
     await _loadAndPlay(_queue[_currentIndex]);
   }
 
-  // ── Auto-advance on completion ────────────────────────────────────────────
   Future<void> _autoNext() async {
     if (_queue.isEmpty) return;
     _currentIndex = _shuffle

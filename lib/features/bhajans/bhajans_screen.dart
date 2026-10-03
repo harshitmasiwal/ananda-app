@@ -111,7 +111,6 @@ class _NowPlayingCardState extends ConsumerState<_NowPlayingCard>
   @override
   Widget build(BuildContext context) {
     final currentBhajan = ref.watch(currentBhajanProvider).valueOrNull;
-    final asyncAllBhajans = ref.watch(bhajansProvider);
     final playerStateAsync = ref.watch(playerStateProvider);
     final positionAsync = ref.watch(positionProvider);
     final durationAsync = ref.watch(durationProvider);
