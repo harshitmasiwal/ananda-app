@@ -40,12 +40,12 @@ class AppCatalog {
     );
   }
 
-  /// Fallback catalog with your actual uploaded files.
-  /// Update public IDs once files are uploaded to Cloudinary.
+  /// Fallback catalog — mirrors the live catalog.json so the app
+  /// works without network access.
   static AppCatalog get fallback => AppCatalog.fromJson(_fallbackJson);
 }
 
-/// ── Cloudinary Service ───────────────────────────────────────────────────────
+// ── Cloudinary Service ─────────────────────────────────────────────────────────
 
 class CloudinaryService {
   CloudinaryService._();
@@ -92,124 +92,103 @@ class CloudinaryService {
   }
 }
 
-/// Fallback catalog (hardcoded with your actual files).
-/// Public IDs follow the pattern: folder/filename (no extension for audio/image)
-/// Example: 'ananda/bhajans/hanuman/58_hanuman_vandna'
+// ── Fallback catalog (v2.0 — mirrors live catalog.json) ───────────────────────
+// Update this whenever you update catalog.json on Cloudinary.
 
 const _fallbackJson = {
-  'version': '1.0',
+  'version': '2.0',
   'wallpapers': [
     {
       'id': 'w1',
-      'title': 'Devotional Wallpaper 1',
-      'titleHi': 'भक्ति वॉलपेपर १',
-      'category': 'hanuman',
-      'publicId': 'ananda/wallpapers/wallpaper_1',
-      'isFeatured': true,
+      'title': 'Wallpaper 2',
+      'titleHi': '',
+      'publicId': 'wallpaper_2',
+      'format': 'png',
+      'url': 'https://res.cloudinary.com/dfbcf8uz/image/upload/v1790970459/wallpaper_2.png',
     },
     {
       'id': 'w2',
-      'title': 'Devotional Wallpaper 2',
-      'titleHi': 'भक्ति वॉलपेपर २',
-      'category': 'hanuman',
-      'publicId': 'ananda/wallpapers/wallpaper_2',
-      'isFeatured': false,
+      'title': 'Wallpaper 1',
+      'titleHi': '',
+      'publicId': 'wallpaper_1',
+      'format': 'png',
+      'url': 'https://res.cloudinary.com/dfbcf8uz/image/upload/v1790970413/wallpaper_1.png',
     },
   ],
   'bhajans': [
     {
       'id': 'b1',
-      'title': 'Pawan Sut Vinti Barambar',
-      'titleHi': 'पवन सुत विनती बारंबार',
-      'artist': 'Unknown',
-      'artistHi': 'अज्ञात',
-      'category': 'hanuman',
-      'audioPublicId': 'ananda/bhajans/hanuman/57_pawan_sut_vinti_barambar',
+      'title': 'Namashivaye Om Namashivaye',
+      'titleHi': '',
+      'category': 'shiv',
+      'publicId': '01_AISI_SUBAH_NA_AAYE',
+      'format': 'mp3',
+      'url': 'https://res.cloudinary.com/dfbcf8uz/video/upload/v1790967968/01_AISI_SUBAH_NA_AAYE.mp3',
     },
     {
       'id': 'b2',
-      'title': 'Jai Bola',
-      'titleHi': 'जय बोला',
-      'artist': 'Unknown',
-      'artistHi': 'अज्ञात',
-      'category': 'hanuman',
-      'audioPublicId': 'ananda/bhajans/hanuman/jai_bola',
+      'title': 'Maa Ka Dil',
+      'titleHi': '',
+      'category': 'mata-rani',
+      'publicId': '01_maa_ka_dil',
+      'format': 'mp3',
+      'url': 'https://res.cloudinary.com/dfbcf8uz/video/upload/v1790967505/01_maa_ka_dil.mp3',
     },
     {
       'id': 'b3',
-      'title': 'Hanuman Vandna',
-      'titleHi': 'हनुमान वंदना',
-      'artist': 'Unknown',
-      'artistHi': 'अज्ञात',
-      'category': 'hanuman',
-      'audioPublicId': 'ananda/bhajans/hanuman/58_hanuman_vandna',
+      'title': 'Jay Ambe Gouri',
+      'titleHi': '',
+      'category': 'mata-rani',
+      'publicId': '06_Jay_Ambe_Gouri',
+      'format': 'mp3',
+      'url': 'https://res.cloudinary.com/dfbcf8uz/video/upload/v1790967501/06_Jay_Ambe_Gouri.mp3',
     },
     {
       'id': 'b4',
-      'title': 'Om Namashivaye',
-      'titleHi': 'ॐ नमः शिवाय',
-      'artist': 'Unknown',
-      'artistHi': 'अज्ञात',
-      'category': 'shiv',
-      'audioPublicId': 'ananda/bhajans/shiv/01_namashivaye_om_namashivaye',
-    },
-    {
-      'id': 'b5',
-      'title': 'Maa Ka Dil',
-      'titleHi': 'माँ का दिल',
-      'artist': 'Unknown',
-      'artistHi': 'अज्ञात',
-      'category': 'mata-rani',
-      'audioPublicId': 'ananda/bhajans/mata-rani/01_maa_ka_dil',
-    },
-    {
-      'id': 'b6',
-      'title': 'Jay Ambe Gouri',
-      'titleHi': 'जय अंबे गौरी',
-      'artist': 'Unknown',
-      'artistHi': 'अज्ञात',
-      'category': 'mata-rani',
-      'audioPublicId': 'ananda/bhajans/mata-rani/06_jay_ambe_gouri',
+      'title': 'Hanuman Vandna',
+      'titleHi': '',
+      'category': 'hanuman',
+      'publicId': '58_hanuman_vandna',
+      'format': 'mp3',
+      'url': 'https://res.cloudinary.com/dfbcf8uz/video/upload/v1790967455/58_hanuman_vandna.mp3',
     },
   ],
   'holyBooks': [
     {
       'id': 'hb1',
-      'title': 'Holy Book 1',
-      'titleHi': 'पवित्र ग्रंथ १',
-      'author': 'Sacred Scripture',
-      'authorHi': 'पवित्र शास्त्र',
-      'description': 'A sacred devotional text.',
-      'descriptionHi': 'एक पवित्र भक्ति ग्रंथ।',
-      'pdfPublicId': 'ananda/holy-books/pdfs/holy_book_1',
-      'coverPublicId': 'ananda/holy-books/covers/holy_book_1',
+      'title': 'Holy Book 2',
+      'titleHi': '',
+      'pdfPublicId': 'holybook_2',
+      'pdfUrl': 'https://res.cloudinary.com/dfbcf8uz/image/upload/v1790967544/holybook_2.pdf',
+      'coverPublicId': 'holy_book_1',
+      'coverUrl': 'https://res.cloudinary.com/dfbcf8uz/image/upload/v1790967558/holy_book_1.png',
     },
     {
       'id': 'hb2',
-      'title': 'Holy Book 2',
-      'titleHi': 'पवित्र ग्रंथ २',
-      'author': 'Sacred Scripture',
-      'authorHi': 'पवित्र शास्त्र',
-      'description': 'A sacred devotional text.',
-      'descriptionHi': 'एक पवित्र भक्ति ग्रंथ।',
-      'pdfPublicId': 'ananda/holy-books/pdfs/holy_book_2',
-      'coverPublicId': 'ananda/holy-books/covers/holy_book_2',
+      'title': 'Holy Book 1',
+      'titleHi': '',
+      'pdfPublicId': 'holy_book1',
+      'pdfUrl': 'https://res.cloudinary.com/dfbcf8uz/image/upload/v1790967543/holy_book1.pdf',
+      'coverPublicId': 'holy_book_2',
+      'coverUrl': 'https://res.cloudinary.com/dfbcf8uz/image/upload/v1790967559/holy_book_2.png',
     },
   ],
   'ringtones': [
     {
       'id': 'r1',
-      'title': 'Jai Bola Ringtone',
-      'titleHi': 'जय बोला रिंगटोन',
-      'category': 'mantra',
-      'audioPublicId': 'ananda/ringtones/jai_bola',
+      'title': 'Ringtone Jai Bola',
+      'titleHi': '',
+      'publicId': 'JAI_BOLA',
+      'format': 'mp3',
+      'url': 'https://res.cloudinary.com/dfbcf8uz/video/upload/v1790967518/JAI_BOLA.mp3',
     },
     {
       'id': 'r2',
-      'title': 'Pawan Sut Ringtone',
-      'titleHi': 'पवन सुत रिंगटोन',
-      'category': 'mantra',
-      'audioPublicId': 'ananda/ringtones/pawan_sut_vinti_barambar',
+      'title': 'Pawan Sut Vinti Barambar',
+      'titleHi': '',
+      'publicId': '57_pawan_sut_vinti_barambar',
+      'format': 'mp3',
+      'url': 'https://res.cloudinary.com/dfbcf8uz/video/upload/v1790967516/57_pawan_sut_vinti_barambar.mp3',
     },
   ],
 };

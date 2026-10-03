@@ -32,9 +32,11 @@ final wallpapersProvider = Provider<AsyncValue<List<WallpaperModel>>>((ref) {
 
 final featuredWallpapersProvider =
     Provider<AsyncValue<List<WallpaperModel>>>((ref) {
-  return ref.watch(catalogProvider).whenData(
-        (c) => c.wallpapers.where((w) => w.isFeatured).toList(),
-      );
+  return ref.watch(catalogProvider).whenData((c) {
+    final featured = c.wallpapers.where((w) => w.isFeatured).toList();
+    // v2.0 catalog may not have isFeatured — show all wallpapers as featured
+    return featured.isEmpty ? c.wallpapers : featured;
+  });
 });
 
 final bhajansProvider = Provider<AsyncValue<List<BhajanModel>>>((ref) {

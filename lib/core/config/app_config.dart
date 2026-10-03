@@ -10,8 +10,9 @@ class AppConfig {
 
   static const String _cdnBase = 'https://res.cloudinary.com/$cloudName';
 
-  /// Fixed link, no version number. Re-upload the file with the
-  /// Public ID "catalog.json" and the app picks up the new content.
+  /// Versionless URL — always serves the latest uploaded catalog.json.
+  /// To update content: re-upload catalog.json to Cloudinary (cloud: dfbcf8uz)
+  /// with Public ID "catalog" under Raw resource type.
   static const String catalogUrl = '$_cdnBase/raw/upload/catalog.json';
 
   static String imageUrl(String publicId,
