@@ -41,18 +41,39 @@ class HolyBookModel {
       AppConfig.imageUrl(coverPublicId, transformation: AppConfig.coverTransform);
 
   factory HolyBookModel.fromJson(Map<String, dynamic> json) {
+    final title = (json['title'] as String?) ?? 'Holy Book';
+    final titleHiRaw = json['titleHi'] as String?;
+    final titleHi = (titleHiRaw != null && titleHiRaw.trim().isNotEmpty)
+        ? titleHiRaw
+        : title;
+
+    final author = (json['author'] as String?) ?? '';
+    final authorHiRaw = json['authorHi'] as String?;
+    final authorHi = (authorHiRaw != null && authorHiRaw.trim().isNotEmpty)
+        ? authorHiRaw
+        : author;
+
+    final description = (json['description'] as String?) ?? '';
+    final descriptionHiRaw = json['descriptionHi'] as String?;
+    final descriptionHi =
+        (descriptionHiRaw != null && descriptionHiRaw.trim().isNotEmpty)
+            ? descriptionHiRaw
+            : description;
+
     return HolyBookModel(
       id: json['id'] as String,
-      title: json['title'] as String,
-      titleHi: (json['titleHi'] as String?) ?? json['title'] as String,
-      author: (json['author'] as String?) ?? '',
-      authorHi: (json['authorHi'] as String?) ?? '',
-      description: (json['description'] as String?) ?? '',
-      descriptionHi: (json['descriptionHi'] as String?) ?? '',
-      pdfPublicId: (json['pdfPublicId'] as String?) ?? '',
+      title: title,
+      titleHi: titleHi,
+      author: author,
+      authorHi: authorHi,
+      description: description,
+      descriptionHi: descriptionHi,
+      pdfPublicId: (json['pdfPublicId'] as String?) ??
+          (json['publicId'] as String?) ??
+          '',
       coverPublicId: (json['coverPublicId'] as String?) ?? '',
       pageCount: json['pageCount'] as int?,
-      directPdfUrl: json['pdfUrl'] as String?,
+      directPdfUrl: json['pdfUrl'] as String? ?? json['url'] as String?,
       directCoverUrl: json['coverUrl'] as String?,
     );
   }

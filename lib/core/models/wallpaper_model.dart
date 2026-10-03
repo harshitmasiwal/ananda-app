@@ -30,14 +30,33 @@ class WallpaperModel {
       AppConfig.imageUrl(publicId, transformation: AppConfig.wallpaperFullTransform);
 
   factory WallpaperModel.fromJson(Map<String, dynamic> json) {
+    final rawTitle = (json['title'] as String?)?.trim() ?? '';
+    final rawTitleHi = (json['titleHi'] as String?)?.trim() ?? '';
+
+    // Use Cloudinary title / titleHi directly without hardcoded overrides
+    final String title;
+    final String titleHi;
+
+    if (rawTitleHi.isNotEmpty) {
+      title = rawTitleHi;
+      titleHi = rawTitleHi;
+    } else if (rawTitle.isNotEmpty) {
+      title = rawTitle;
+      titleHi = rawTitle;
+    } else {
+      title = 'Wallpaper';
+      titleHi = 'वॉलपेपर';
+    }
+
+    final category = (json['category'] as String?) ?? 'all';
+
     return WallpaperModel(
       id: json['id'] as String,
-      title: json['title'] as String,
-      titleHi: (json['titleHi'] as String?) ?? json['title'] as String,
-      // v2.0 catalog has no category — fall back to 'general'
-      category: (json['category'] as String?) ?? 'general',
+      title: title,
+      titleHi: titleHi,
+      category: category,
       publicId: (json['publicId'] as String?) ?? '',
-      isFeatured: (json['isFeatured'] as bool?) ?? false,
+      isFeatured: (json['isFeatured'] as bool?) ?? true,
       directUrl: json['url'] as String?,
     );
   }

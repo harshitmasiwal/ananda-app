@@ -58,6 +58,24 @@ final ringtonesProvider = Provider<AsyncValue<List<RingtoneModel>>>((ref) {
   return ref.watch(catalogProvider).whenData((c) => c.ringtones);
 });
 
+// ── Ringtone sorting ────────────────────────────────────────────────────────
+enum RingtoneSort { latest, popular }
+
+final ringtoneSortProvider =
+    StateProvider<RingtoneSort>((ref) => RingtoneSort.latest);
+
+final sortedRingtonesProvider =
+    Provider<AsyncValue<List<RingtoneModel>>>((ref) {
+  final sort = ref.watch(ringtoneSortProvider);
+  return ref.watch(catalogProvider).whenData((c) {
+    final list = List<RingtoneModel>.from(c.ringtones);
+    if (sort == RingtoneSort.popular) {
+      list.sort((a, b) => a.title.compareTo(b.title));
+    }
+    return list;
+  });
+});
+
 final ringtonesByCategoryProvider =
     Provider.family<AsyncValue<List<RingtoneModel>>, String>((ref, category) {
   return ref.watch(catalogProvider).whenData(
@@ -65,17 +83,31 @@ final ringtonesByCategoryProvider =
       );
 });
 
-// ── Wallpaper category filter ─────────────────────────────────────────────────
-final selectedWallpaperCategoryProvider = StateProvider<String?>((ref) => null);
+// ── Wallpaper sorting ────────────────────────────────────────────────────────
+enum WallpaperSort { latest, popular }
 
-final filteredWallpapersProvider =
+final wallpaperSortProvider =
+    StateProvider<WallpaperSort>((ref) => WallpaperSort.latest);
+
+final sortedWallpapersProvider =
     Provider<AsyncValue<List<WallpaperModel>>>((ref) {
-  final category = ref.watch(selectedWallpaperCategoryProvider);
+  final sort = ref.watch(wallpaperSortProvider);
   return ref.watch(catalogProvider).whenData((c) {
-    if (category == null) return c.wallpapers;
-    return c.wallpapers.where((w) => w.category == category).toList();
+    final list = List<WallpaperModel>.from(c.wallpapers);
+    if (sort == WallpaperSort.popular) {
+      list.sort((a, b) {
+        if (a.isFeatured && !b.isFeatured) return -1;
+        if (!a.isFeatured && b.isFeatured) return 1;
+        return a.title.compareTo(b.title);
+      });
+    }
+    return list;
   });
 });
+
+final selectedWallpaperCategoryProvider = StateProvider<String?>((ref) => null);
+
+final filteredWallpapersProvider = sortedWallpapersProvider;
 
 // ── Bhajan category filter ────────────────────────────────────────────────────
 final selectedBhajanCategoryProvider =

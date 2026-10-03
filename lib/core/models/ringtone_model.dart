@@ -30,16 +30,39 @@ class RingtoneModel {
   }
 
   factory RingtoneModel.fromJson(Map<String, dynamic> json) {
-    // v2.0 uses 'publicId'; v1.0 used 'audioPublicId'
     final publicId =
         (json['audioPublicId'] as String?) ?? (json['publicId'] as String?) ?? '';
+    final rawTitle = (json['title'] as String?)?.trim() ?? '';
+    final rawTitleHi = (json['titleHi'] as String?)?.trim() ?? '';
+
+    // Directly use Cloudinary title & titleHi without hardcoded overrides
+    final String title;
+    final String titleHi;
+
+    if (rawTitleHi.isNotEmpty) {
+      title = rawTitleHi;
+      titleHi = rawTitleHi;
+    } else if (rawTitle.isNotEmpty) {
+      title = rawTitle;
+      titleHi = rawTitle;
+    } else {
+      title = 'Ringtone';
+      titleHi = 'रिंगटोन';
+    }
+
+    final category = (json['category'] as String?) ?? 'all';
+
+    final bytes = json['bytes'] as num?;
+    final duration = json['durationSeconds'] as int? ??
+        (bytes != null ? (bytes / 16000).round() : null);
+
     return RingtoneModel(
       id: json['id'] as String,
-      title: json['title'] as String,
-      titleHi: (json['titleHi'] as String?) ?? json['title'] as String,
-      category: (json['category'] as String?) ?? 'mantra',
+      title: title,
+      titleHi: titleHi,
+      category: category,
       audioPublicId: publicId,
-      durationSeconds: json['durationSeconds'] as int?,
+      durationSeconds: duration,
       directAudioUrl: json['url'] as String?,
     );
   }
