@@ -43,6 +43,10 @@ class BhajanModel {
     // v2.0 uses 'publicId'; v1.0 used 'audioPublicId'
     final publicId =
         (json['audioPublicId'] as String?) ?? (json['publicId'] as String?) ?? '';
+    final bytes = json['bytes'] as num?;
+    final int? durationSec = json['durationSeconds'] as int? ??
+        (bytes != null ? (bytes / 16000).round() : null);
+
     return BhajanModel(
       id: json['id'] as String,
       title: json['title'] as String,
@@ -52,7 +56,7 @@ class BhajanModel {
       category: (json['category'] as String?) ?? 'general',
       audioPublicId: publicId,
       coverPublicId: json['coverPublicId'] as String?,
-      durationSeconds: json['durationSeconds'] as int?,
+      durationSeconds: durationSec,
       directAudioUrl: json['url'] as String?,
     );
   }

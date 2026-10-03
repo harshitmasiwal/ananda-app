@@ -12,10 +12,15 @@ Future<void> main() async {
   // This patches just_audio's AudioPlayer so it can post media notifications.
   await JustAudioBackground.init(
     androidNotificationChannelId: 'com.elysian.ananda.audio',
-    androidNotificationChannelName: 'Ananda Player',
+    androidNotificationChannelName: 'Ananda Devotional Player',
+    androidNotificationChannelDescription: 'Spiritual music and bhajan controls',
     androidNotificationIcon: 'mipmap/ic_launcher',
-    androidNotificationOngoing: true,      // keeps notification alive
-    androidStopForegroundOnPause: true,    // dismissible when paused
+    notificationColor: const Color(0xFFFF6F00),
+    androidNotificationOngoing: false,
+    androidStopForegroundOnPause: true,
+    preloadArtwork: true,
+    artDownscaleWidth: 500,
+    artDownscaleHeight: 500,
   );
 
   // Configure audio session & auto-advance (creates AudioPlayer internally)

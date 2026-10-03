@@ -1,7 +1,9 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
     <!-- Required on Android 13+ (API 33+) to show media notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
@@ -10,7 +12,7 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
-            android:name=".MainActivity"
+            android:name="com.ryanheise.audioservice.AudioServiceActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity=""
@@ -32,24 +34,25 @@
         </activity>
 
         <!--
-            audio_service 0.18.x background service.
-            Class name is AudioService (NOT AudioServiceBackground which is for 0.17.x).
+            audio_service background service.
             foregroundServiceType="mediaPlayback" is required on Android 12+.
+            FOREGROUND_SERVICE_MEDIA_PLAYBACK permission is declared above for Android 14+.
         -->
         <service
             android:name="com.ryanheise.audioservice.AudioService"
-            android:taskAffinity=""
-            android:exported="false"
-            android:foregroundServiceType="mediaPlayback">
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="true"
+            tools:ignore="Instantiatable">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService"/>
             </intent-filter>
         </service>
 
-        <!-- Receives media button events from headset / Bluetooth -->
+        <!-- Receives media button events from headset / Bluetooth / lock screen -->
         <receiver
             android:name="com.ryanheise.audioservice.MediaButtonReceiver"
-            android:exported="true">
+            android:exported="true"
+            tools:ignore="Instantiatable">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON"/>
             </intent-filter>

@@ -7,12 +7,19 @@ import '../home/home_screen.dart';
 import '../bhajans/bhajans_screen.dart';
 import '../holy_books/holy_books_screen.dart';
 
+import 'package:permission_handler/permission_handler.dart';
+
 // Tracks the active bottom‑nav tab (0 = Home, 1 = Bhajans, 2 = Books)
 final selectedTabProvider = StateProvider<int>((ref) => 0);
 
-class MainShell extends ConsumerWidget {
+class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
 
+  @override
+  ConsumerState<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends ConsumerState<MainShell> {
   static const _screens = [
     HomeScreen(),
     BhajansScreen(),
@@ -20,7 +27,24 @@ class MainShell extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _requestNotificationPermission();
+    });
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    try {
+      final status = await Permission.notification.status;
+      if (status.isDenied) {
+        await Permission.notification.request();
+      }
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final tab = ref.watch(selectedTabProvider);
     final isHindi = ref.watch(isHindiProvider);
 

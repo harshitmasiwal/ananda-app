@@ -1,18 +1,17 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:audio_session/audio_session.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../models/bhajan_model.dart';
 import '../models/ringtone_model.dart';
 
-/// Singleton audio service: queue, shuffle, auto-advance, media notification.
+/// Singleton audio service: queue, shuffle, continuous sequence loop, media notification.
 class AudioPlayerService {
   AudioPlayerService._();
   static final AudioPlayerService instance = AudioPlayerService._();
 
   final _player = AudioPlayer();
-  final _rng = Random();
 
   // ── Queue state ────────────────────────────────────────────────────────────
   List<BhajanModel> _queue = [];
@@ -42,15 +41,38 @@ class AudioPlayerService {
   Duration get position => _player.position;
   bool get playing => _player.playing;
 
+  final Map<String, Duration> _knownDurations = {};
+
   /// Call once at app startup — AFTER JustAudioBackground.init().
   Future<void> init() async {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
 
-    // Auto-advance when a track completes
+    // Loop all tracks so the queue never halts and next/prev wrap seamlessly
+    await _player.setLoopMode(LoopMode.all);
+
+    // Cache exact audio duration from player stream
+    _player.durationStream.listen((d) {
+      if (d != null && currentBhajan != null) {
+        _knownDurations[currentBhajan!.id] = d;
+      }
+    });
+
+    // Listen to track index changes (from in-app or from lockscreen/notification shade)
+    _player.currentIndexStream.listen((index) {
+      if (index != null && index >= 0 && index < _queue.length) {
+        _currentIndex = index;
+        _currentBhajanCtrl.add(_queue[_currentIndex]);
+      }
+    });
+
+    // Auto-advance loop fallback if playlist reaches the end
     _player.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
-        _autoNext();
+        if (!_player.hasNext && _queue.isNotEmpty) {
+          _player.seek(Duration.zero, index: 0);
+          _player.play();
+        }
       }
     });
   }
@@ -59,49 +81,104 @@ class AudioPlayerService {
 
   Future<void> playBhajan(BhajanModel bhajan,
       {List<BhajanModel>? queue}) async {
+    // Ensure notification permission is requested so controls appear on lock screen/shade
+    try {
+      final status = await Permission.notification.status;
+      if (!status.isGranted) {
+        await Permission.notification.request();
+      }
+    } catch (_) {}
+
     if (currentBhajan?.id == bhajan.id) {
       await togglePlayPause();
       return;
     }
 
-    if (queue != null && queue.isNotEmpty) {
-      _queue = List<BhajanModel>.from(queue);
-    } else if (!_queue.any((b) => b.id == bhajan.id)) {
-      _queue = [bhajan];
-    }
+    final newQueue = (queue != null && queue.isNotEmpty)
+        ? List<BhajanModel>.from(queue)
+        : (_queue.isNotEmpty ? _queue : [bhajan]);
 
+    // Check if newQueue has same IDs as current _queue
+    final bool isSameQueue = _queue.length == newQueue.length &&
+        _queue.isNotEmpty &&
+        List.generate(_queue.length, (i) => _queue[i].id == newQueue[i].id)
+            .every((match) => match);
+
+    _queue = newQueue;
     _currentIndex = _queue.indexWhere((b) => b.id == bhajan.id);
     if (_currentIndex == -1) {
       _queue.add(bhajan);
       _currentIndex = _queue.length - 1;
     }
 
-    await _loadAndPlay(_queue[_currentIndex]);
+    _currentBhajanCtrl.add(_queue[_currentIndex]);
+
+    try {
+      if (isSameQueue && _player.audioSource != null) {
+        await _player.seek(Duration.zero, index: _currentIndex);
+        await _player.play();
+      } else {
+        final playlist = ConcatenatingAudioSource(
+          useLazyPreparation: true,
+          children: _queue.map((b) => _buildAudioSource(b)).toList(),
+        );
+        await _player.setAudioSource(playlist, initialIndex: _currentIndex);
+        // LoopMode.all ensures hasNext / hasPrevious stay active and tracks loop
+        await _player.setLoopMode(LoopMode.all);
+        if (_shuffle) {
+          await _player.setShuffleModeEnabled(true);
+        }
+        await _player.play();
+      }
+    } catch (e) {
+      try {
+        await _player.setAudioSource(_buildAudioSource(bhajan));
+        await _player.play();
+      } catch (_) {}
+    }
   }
 
-  Future<void> _loadAndPlay(BhajanModel bhajan) async {
-    _currentBhajanCtrl.add(bhajan);
-    try {
-      await _player.stop();
-      // MediaItem tag → populates the media notification
-      final source = AudioSource.uri(
-        Uri.parse(bhajan.audioUrl),
-        tag: MediaItem(
-          id: bhajan.id,
-          title: bhajan.title,
-          artist: bhajan.artist.isNotEmpty ? bhajan.artist : bhajan.category,
-          album: 'Ananda',
-          // Use first wallpaper as artwork — replace with dedicated icon if available
-          artUri: Uri.parse(
-            'https://res.cloudinary.com/dfbcf8uz/image/upload/w_300,h_300,c_fill,q_auto,f_auto/wallpaper_1',
-          ),
-        ),
-      );
-      await _player.setAudioSource(source);
-      await _player.play();
-    } catch (e) {
-      // Swallow network/format errors
-    }
+  AudioSource _buildAudioSource(BhajanModel bhajan) {
+    // High-resolution devotional artwork tailored to category
+    final String defaultArtwork = bhajan.category.toLowerCase().contains('hanuman')
+        ? 'https://res.cloudinary.com/dfbcf8uz/image/upload/w_500,h_500,c_fill,q_auto,f_auto/v1790970459/wallpaper_2.png'
+        : 'https://res.cloudinary.com/dfbcf8uz/image/upload/w_500,h_500,c_fill,q_auto,f_auto/v1790970413/wallpaper_1.png';
+
+    final coverUri = (bhajan.coverUrl != null && bhajan.coverUrl!.isNotEmpty)
+        ? Uri.tryParse(bhajan.coverUrl!)
+        : Uri.parse(defaultArtwork);
+
+    // Formatted category display name (e.g., 'shiv' -> 'Shiv', 'mata-rani' -> 'Mata Rani')
+    final String categoryTitle = bhajan.category
+        .split(RegExp(r'[-_\s]+'))
+        .where((w) => w.isNotEmpty)
+        .map((w) => '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
+        .join(' ');
+
+    final String artistName = bhajan.artist.isNotEmpty
+        ? bhajan.artist
+        : (categoryTitle.isNotEmpty ? '$categoryTitle Bhajan' : 'Devotional');
+
+    final Duration duration = _knownDurations[bhajan.id] ??
+        (bhajan.durationSeconds != null && bhajan.durationSeconds! > 0
+            ? Duration(seconds: bhajan.durationSeconds!)
+            : const Duration(minutes: 5));
+
+    return AudioSource.uri(
+      Uri.parse(bhajan.audioUrl),
+      tag: MediaItem(
+        id: bhajan.id,
+        title: bhajan.title,
+        artist: artistName,
+        album: 'Ananda Devotional',
+        genre: 'Spiritual',
+        duration: duration,
+        displayTitle: bhajan.title,
+        displaySubtitle: artistName,
+        displayDescription: 'Ananda • $categoryTitle',
+        artUri: coverUri,
+      ),
+    );
   }
 
   Future<void> playRingtone(RingtoneModel ringtone) async {
@@ -112,6 +189,7 @@ class AudioPlayerService {
         tag: MediaItem(
           id: ringtone.id,
           title: ringtone.title,
+          artist: 'Ananda Ringtones',
           album: 'Ananda Ringtones',
         ),
       );
@@ -137,10 +215,13 @@ class AudioPlayerService {
 
   Future<void> skipNext() async {
     if (_queue.isEmpty) return;
-    _currentIndex = _shuffle
-        ? _rng.nextInt(_queue.length)
-        : (_currentIndex + 1) % _queue.length;
-    await _loadAndPlay(_queue[_currentIndex]);
+    if (_player.hasNext) {
+      await _player.seekToNext();
+    } else {
+      // Wrap to the starting track
+      _currentIndex = 0;
+      await _player.seek(Duration.zero, index: 0);
+    }
   }
 
   Future<void> skipPrev() async {
@@ -149,23 +230,19 @@ class AudioPlayerService {
       await seekTo(Duration.zero);
       return;
     }
-    _currentIndex = _shuffle
-        ? _rng.nextInt(_queue.length)
-        : (_currentIndex - 1 + _queue.length) % _queue.length;
-    await _loadAndPlay(_queue[_currentIndex]);
-  }
-
-  Future<void> _autoNext() async {
-    if (_queue.isEmpty) return;
-    _currentIndex = _shuffle
-        ? _rng.nextInt(_queue.length)
-        : (_currentIndex + 1) % _queue.length;
-    await _loadAndPlay(_queue[_currentIndex]);
+    if (_player.hasPrevious) {
+      await _player.seekToPrevious();
+    } else {
+      // Wrap to the ending track
+      _currentIndex = _queue.length - 1;
+      await _player.seek(Duration.zero, index: _currentIndex);
+    }
   }
 
   // ── Shuffle ───────────────────────────────────────────────────────────────
-  void toggleShuffle() {
+  Future<void> toggleShuffle() async {
     _shuffle = !_shuffle;
+    await _player.setShuffleModeEnabled(_shuffle);
     _shuffleCtrl.add(_shuffle);
   }
 
