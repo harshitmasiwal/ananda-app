@@ -1,24 +1,37 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_session/audio_session.dart';
 import '../models/bhajan_model.dart';
 import '../models/ringtone_model.dart';
 
-/// Singleton audio player service.
-/// Wraps [AudioPlayer] from just_audio and provides a simple API
-/// for the rest of the app to play bhajans / ringtones.
+/// Singleton audio service: queue, shuffle, auto-advance.
 class AudioPlayerService {
   AudioPlayerService._();
   static final AudioPlayerService instance = AudioPlayerService._();
 
   final _player = AudioPlayer();
+  final _rng = Random();
 
-  BhajanModel? _currentBhajan;
-  RingtoneModel? _currentRingtone;
+  // ── Queue state ────────────────────────────────────────────────────────────
+  List<BhajanModel> _queue = [];
+  int _currentIndex = -1;
+  bool _shuffle = false;
 
-  BhajanModel? get currentBhajan => _currentBhajan;
-  RingtoneModel? get currentRingtone => _currentRingtone;
+  // ── Broadcast streams for UI ───────────────────────────────────────────────
+  final _currentBhajanCtrl = StreamController<BhajanModel?>.broadcast();
+  final _shuffleCtrl = StreamController<bool>.broadcast();
 
-  /// Streams forwarded from [AudioPlayer]
+  Stream<BhajanModel?> get currentBhajanStream => _currentBhajanCtrl.stream;
+  Stream<bool> get shuffleStream => _shuffleCtrl.stream;
+
+  BhajanModel? get currentBhajan =>
+      (_currentIndex >= 0 && _currentIndex < _queue.length)
+          ? _queue[_currentIndex]
+          : null;
+  bool get shuffle => _shuffle;
+
+  // ── just_audio streams ────────────────────────────────────────────────────
   Stream<PlayerState> get playerStateStream => _player.playerStateStream;
   Stream<Duration?> get durationStream => _player.durationStream;
   Stream<Duration> get positionStream => _player.positionStream;
@@ -28,72 +41,119 @@ class AudioPlayerService {
   Duration get position => _player.position;
   bool get playing => _player.playing;
 
-  /// Configure audio session once at app startup.
+  /// Call once at app startup.
   Future<void> init() async {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
+
+    // Auto-advance on track completion
+    _player.playerStateStream.listen((state) {
+      if (state.processingState == ProcessingState.completed) {
+        _autoNext();
+      }
+    });
   }
 
-  /// Play a bhajan. If it's already the current one, toggles play/pause.
-  Future<void> playBhajan(BhajanModel bhajan) async {
-    if (_currentBhajan?.id == bhajan.id) {
+  // ── Playback ───────────────────────────────────────────────────────────────
+
+  /// Play [bhajan] from [queue].
+  /// • Same track → toggles play/pause.
+  /// • [queue] replaces the current queue so sequential playback follows
+  ///   whatever list is visible (filtered category or "All").
+  Future<void> playBhajan(BhajanModel bhajan,
+      {List<BhajanModel>? queue}) async {
+    if (currentBhajan?.id == bhajan.id) {
       await togglePlayPause();
       return;
     }
-    _currentBhajan = bhajan;
-    _currentRingtone = null;
-    await _player.stop();
-    await _player.setUrl(bhajan.audioUrl);
-    await _player.play();
+
+    if (queue != null && queue.isNotEmpty) {
+      _queue = List<BhajanModel>.from(queue);
+    } else if (!_queue.any((b) => b.id == bhajan.id)) {
+      _queue = [bhajan];
+    }
+
+    _currentIndex = _queue.indexWhere((b) => b.id == bhajan.id);
+    if (_currentIndex == -1) {
+      _queue.add(bhajan);
+      _currentIndex = _queue.length - 1;
+    }
+
+    await _loadAndPlay(_queue[_currentIndex]);
   }
 
-  /// Play a ringtone. If it's already the current one, toggles play/pause.
+  Future<void> _loadAndPlay(BhajanModel bhajan) async {
+    _currentBhajanCtrl.add(bhajan);
+    try {
+      await _player.stop();
+      await _player.setUrl(bhajan.audioUrl);
+      await _player.play();
+    } catch (_) {
+      // Swallow network errors silently
+    }
+  }
+
   Future<void> playRingtone(RingtoneModel ringtone) async {
-    if (_currentRingtone?.id == ringtone.id) {
-      await togglePlayPause();
-      return;
-    }
-    _currentRingtone = ringtone;
-    _currentBhajan = null;
-    await _player.stop();
-    await _player.setUrl(ringtone.audioUrl);
-    await _player.play();
+    try {
+      await _player.stop();
+      await _player.setUrl(ringtone.audioUrl);
+      await _player.play();
+    } catch (_) {}
   }
 
   Future<void> togglePlayPause() async {
-    if (_player.playing) {
-      await _player.pause();
-    } else {
-      await _player.play();
-    }
+    _player.playing ? await _player.pause() : await _player.play();
   }
 
   Future<void> stop() async {
     await _player.stop();
-    _currentBhajan = null;
-    _currentRingtone = null;
+    _queue = [];
+    _currentIndex = -1;
+    _currentBhajanCtrl.add(null);
   }
 
-  Future<void> seekTo(Duration position) => _player.seek(position);
+  Future<void> seekTo(Duration pos) => _player.seek(pos);
 
-  Future<void> skipNext(List<BhajanModel> queue) async {
-    if (_currentBhajan == null) return;
-    final idx = queue.indexWhere((b) => b.id == _currentBhajan!.id);
-    if (idx != -1 && idx < queue.length - 1) {
-      await playBhajan(queue[idx + 1]);
-    }
+  // ── Skip ──────────────────────────────────────────────────────────────────
+
+  Future<void> skipNext() async {
+    if (_queue.isEmpty) return;
+    _currentIndex = _shuffle
+        ? _rng.nextInt(_queue.length)
+        : (_currentIndex + 1) % _queue.length;
+    await _loadAndPlay(_queue[_currentIndex]);
   }
 
-  Future<void> skipPrev(List<BhajanModel> queue) async {
-    if (_currentBhajan == null) return;
-    // If > 3 seconds in, seek to start; else go to previous track
+  Future<void> skipPrev() async {
+    if (_queue.isEmpty) return;
     if (position.inSeconds > 3) {
       await seekTo(Duration.zero);
-    } else {
-      final idx = queue.indexWhere((b) => b.id == _currentBhajan!.id);
-      if (idx > 0) await playBhajan(queue[idx - 1]);
+      return;
     }
+    _currentIndex = _shuffle
+        ? _rng.nextInt(_queue.length)
+        : (_currentIndex - 1 + _queue.length) % _queue.length;
+    await _loadAndPlay(_queue[_currentIndex]);
   }
 
-  Future<void> dispose() => _player.dispose();
+  // ── Auto-advance on completion ────────────────────────────────────────────
+  Future<void> _autoNext() async {
+    if (_queue.isEmpty) return;
+    _currentIndex = _shuffle
+        ? _rng.nextInt(_queue.length)
+        : (_currentIndex + 1) % _queue.length;
+    await _loadAndPlay(_queue[_currentIndex]);
+  }
+
+  // ── Shuffle ───────────────────────────────────────────────────────────────
+  void toggleShuffle() {
+    _shuffle = !_shuffle;
+    _shuffleCtrl.add(_shuffle);
+  }
+
+  Future<void> dispose() async {
+    await _player.dispose();
+    await _currentBhajanCtrl.close();
+    await _shuffleCtrl.close();
+  }
 }

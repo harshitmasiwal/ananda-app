@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
 import 'core/services/audio_player_service.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Configure audio session for music playback
+  // Configure audio session & auto-advance listener
   await AudioPlayerService.instance.init();
 
   // Force portrait orientation
@@ -16,7 +16,7 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Immersive status bar (transparent, dark icons on light bg)
+  // Immersive status bar
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,

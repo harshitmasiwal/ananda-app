@@ -3,8 +3,16 @@ import 'package:just_audio/just_audio.dart';
 import '../models/bhajan_model.dart';
 import '../services/audio_player_service.dart';
 
-// ── Current playing bhajan ────────────────────────────────────────────────────
-final currentBhajanProvider = StateProvider<BhajanModel?>((ref) => null);
+// ── Current playing bhajan (driven by service stream) ─────────────────────────
+/// Automatically updates whenever the service changes tracks (tap, skip, auto).
+final currentBhajanProvider = StreamProvider<BhajanModel?>((ref) {
+  return AudioPlayerService.instance.currentBhajanStream;
+});
+
+// ── Shuffle mode ──────────────────────────────────────────────────────────────
+final shuffleModeProvider = StreamProvider<bool>((ref) {
+  return AudioPlayerService.instance.shuffleStream;
+});
 
 // ── Player state stream ───────────────────────────────────────────────────────
 final playerStateProvider = StreamProvider<PlayerState>((ref) {
