@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/bhajan_model.dart';
 import '../models/ringtone_model.dart';
+import 'audio_cache_service.dart';
 
 /// Singleton audio service: queue, shuffle, continuous sequence loop, media notification.
 class AudioPlayerService {
@@ -17,6 +19,7 @@ class AudioPlayerService {
   List<BhajanModel> _queue = [];
   int _currentIndex = -1;
   bool _shuffle = false;
+  bool _isPlayingRingtone = false;
 
   // ── Broadcast streams for UI ───────────────────────────────────────────────
   final _currentBhajanCtrl = StreamController<BhajanModel?>.broadcast();
@@ -30,6 +33,7 @@ class AudioPlayerService {
           ? _queue[_currentIndex]
           : null;
   bool get shuffle => _shuffle;
+  bool get isPlayingRingtone => _isPlayingRingtone;
 
   // ── just_audio streams ────────────────────────────────────────────────────
   Stream<PlayerState> get playerStateStream => _player.playerStateStream;
@@ -48,6 +52,9 @@ class AudioPlayerService {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
 
+    // Ensure audio cache directory is initialized
+    await AudioCacheService.instance.init();
+
     // Loop all tracks so the queue never halts and next/prev wrap seamlessly
     await _player.setLoopMode(LoopMode.all);
 
@@ -62,7 +69,9 @@ class AudioPlayerService {
     _player.currentIndexStream.listen((index) {
       if (index != null && index >= 0 && index < _queue.length) {
         _currentIndex = index;
-        _currentBhajanCtrl.add(_queue[_currentIndex]);
+        final track = _queue[_currentIndex];
+        _currentBhajanCtrl.add(track);
+        AudioCacheService.instance.cacheTrackInBackground(track.id, track.audioUrl);
       }
     });
 
@@ -81,6 +90,8 @@ class AudioPlayerService {
 
   Future<void> playBhajan(BhajanModel bhajan,
       {List<BhajanModel>? queue}) async {
+    _isPlayingRingtone = false;
+
     // Ensure notification permission is requested so controls appear on lock screen/shade
     try {
       final status = await Permission.notification.status;
@@ -130,11 +141,16 @@ class AudioPlayerService {
         }
         await _player.play();
       }
+      AudioCacheService.instance.cacheTrackInBackground(bhajan.id, bhajan.audioUrl);
     } catch (e) {
+      debugPrint('Error playing bhajan playlist: $e');
       try {
         await _player.setAudioSource(_buildAudioSource(bhajan));
         await _player.play();
-      } catch (_) {}
+        AudioCacheService.instance.cacheTrackInBackground(bhajan.id, bhajan.audioUrl);
+      } catch (e2) {
+        debugPrint('Error playing fallback single bhajan: $e2');
+      }
     }
   }
 
@@ -164,38 +180,59 @@ class AudioPlayerService {
             ? Duration(seconds: bhajan.durationSeconds!)
             : const Duration(minutes: 5));
 
-    return AudioSource.uri(
-      Uri.parse(bhajan.audioUrl),
-      tag: MediaItem(
-        id: bhajan.id,
-        title: bhajan.title,
-        artist: artistName,
-        album: 'Ananda Devotional',
-        genre: 'Spiritual',
-        duration: duration,
-        displayTitle: bhajan.title,
-        displaySubtitle: artistName,
-        displayDescription: 'Ananda • $categoryTitle',
-        artUri: coverUri,
-      ),
+    final tag = MediaItem(
+      id: bhajan.id,
+      title: bhajan.title,
+      artist: artistName,
+      album: 'Ananda Devotional',
+      genre: 'Spiritual',
+      duration: duration,
+      displayTitle: bhajan.title,
+      displaySubtitle: artistName,
+      displayDescription: 'Ananda • $categoryTitle',
+      artUri: coverUri,
+    );
+
+    return AudioCacheService.instance.buildAudioSourceSync(
+      id: bhajan.id,
+      url: bhajan.audioUrl,
+      tag: tag,
     );
   }
 
   Future<void> playRingtone(RingtoneModel ringtone) async {
     try {
+      _isPlayingRingtone = true;
       await _player.stop();
-      final source = AudioSource.uri(
-        Uri.parse(ringtone.audioUrl),
-        tag: MediaItem(
-          id: ringtone.id,
-          title: ringtone.title,
-          artist: 'Ananda Ringtones',
-          album: 'Ananda Ringtones',
-        ),
+      _queue = [];
+      _currentIndex = -1;
+      _currentBhajanCtrl.add(null);
+
+      final tag = MediaItem(
+        id: 'ringtone_${ringtone.id}',
+        title: ringtone.title,
+        artist: 'Ananda Ringtones',
+        album: 'Ananda Ringtones',
+      );
+      final source = AudioCacheService.instance.buildAudioSourceSync(
+        id: 'ringtone_${ringtone.id}',
+        url: ringtone.audioUrl,
+        tag: tag,
       );
       await _player.setAudioSource(source);
       await _player.play();
-    } catch (_) {}
+      AudioCacheService.instance.cacheTrackInBackground('ringtone_${ringtone.id}', ringtone.audioUrl);
+    } catch (e) {
+      debugPrint('Error playing ringtone: $e');
+    }
+  }
+
+  /// Stops ringtone preview specifically
+  Future<void> stopRingtone() async {
+    if (_isPlayingRingtone) {
+      await _player.stop();
+      _isPlayingRingtone = false;
+    }
   }
 
   Future<void> togglePlayPause() async {
@@ -203,6 +240,7 @@ class AudioPlayerService {
   }
 
   Future<void> stop() async {
+    _isPlayingRingtone = false;
     await _player.stop();
     _queue = [];
     _currentIndex = -1;

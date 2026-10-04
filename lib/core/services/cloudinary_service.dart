@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
 import '../models/wallpaper_model.dart';
 import '../models/bhajan_model.dart';
@@ -55,10 +56,12 @@ class CloudinaryService {
   AppCatalog? _cachedCatalog;
   DateTime? _lastFetched;
   static const _cacheDuration = Duration(hours: 1);
+  static const _catalogCacheKey = 'cached_cloudinary_catalog_json';
 
   /// Fetch the content catalog from Cloudinary.
-  /// Returns cached version if < 1 hour old.
-  /// Falls back to [AppCatalog.fallback] on network error.
+  /// Returns in-memory cached version if < 1 hour old.
+  /// Persists to SharedPreferences so all content works offline.
+  /// Falls back to persisted local cache, then [AppCatalog.fallback] on network error.
   Future<AppCatalog> fetchCatalog({bool forceRefresh = false}) async {
     final now = DateTime.now();
     final isFresh = _lastFetched != null &&
@@ -77,13 +80,34 @@ class CloudinaryService {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
         _cachedCatalog = AppCatalog.fromJson(json);
         _lastFetched = now;
+
+        // Persist to local disk for offline usage
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_catalogCacheKey, response.body);
+        } catch (_) {}
+
         return _cachedCatalog!;
       } else {
-        return _cachedCatalog ?? AppCatalog.fallback;
+        return await _loadFromLocalOrFallback();
       }
     } catch (_) {
-      return _cachedCatalog ?? AppCatalog.fallback;
+      return await _loadFromLocalOrFallback();
     }
+  }
+
+  Future<AppCatalog> _loadFromLocalOrFallback() async {
+    if (_cachedCatalog != null) return _cachedCatalog!;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedJson = prefs.getString(_catalogCacheKey);
+      if (savedJson != null && savedJson.isNotEmpty) {
+        final json = jsonDecode(savedJson) as Map<String, dynamic>;
+        _cachedCatalog = AppCatalog.fromJson(json);
+        return _cachedCatalog!;
+      }
+    } catch (_) {}
+    return AppCatalog.fallback;
   }
 
   void clearCache() {

@@ -63,6 +63,91 @@ class DownloadedBooksNotifier extends StateNotifier<Set<String>> {
   void remove(String bookId) {
     state = state.where((id) => id != bookId).toSet();
   }
+
+  /// Deletes the downloaded PDF file from device storage and updates state.
+  Future<bool> deleteBook(String bookId) async {
+    try {
+      final docDir = await getApplicationDocumentsDirectory();
+      final docFile = File('${docDir.path}/${bookId}_scripture.pdf');
+      if (docFile.existsSync()) {
+        await docFile.delete();
+      }
+
+      final extDir = await getExternalStorageDirectory();
+      if (extDir != null) {
+        final extFile = File('${extDir.path}/${bookId}_scripture.pdf');
+        if (extFile.existsSync()) {
+          await extFile.delete();
+        }
+      }
+
+      remove(bookId);
+      await refresh();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+}
+
+/// Confirmation dialog for deleting a downloaded PDF scripture.
+Future<void> showDeletePdfConfirmationDialog({
+  required BuildContext context,
+  required HolyBookModel book,
+  required bool isHindi,
+  required VoidCallback onDeleted,
+}) async {
+  final title = isHindi ? book.titleHi : book.title;
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: AppColors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Row(
+        children: [
+          const Icon(Icons.delete_outline_rounded,
+              color: Colors.red, size: 24),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              isHindi ? 'ग्रंथ हटाएं?' : 'Delete Scripture?',
+              style: AppTextStyles.h3,
+            ),
+          ),
+        ],
+      ),
+      content: Text(
+        isHindi
+            ? 'क्या आप "${title.isNotEmpty ? title : 'यह ग्रंथ'}" को डिवाइस से हटाना चाहते हैं?'
+            : 'Are you sure you want to delete "$title" from your device storage?',
+        style: AppTextStyles.body.copyWith(fontSize: 13, height: 1.4),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text(
+            isHindi ? 'रद्द करें' : 'Cancel',
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red.shade600,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: Text(isHindi ? 'हटाएं' : 'Delete'),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed == true) {
+    onDeleted();
+  }
 }
 
 class HolyBooksScreen extends ConsumerWidget {
@@ -353,29 +438,80 @@ class _BookCard extends ConsumerWidget {
                 ],
               ),
             ),
-            // Title & Author
+            // Title & Author & Delete action
             Expanded(
               flex: 2,
               child: Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                child: Row(
                   children: [
-                    Text(
-                      isHindi ? book.titleHi : book.title,
-                      style: AppTextStyles.h3.copyWith(fontSize: 13),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (book.author.isNotEmpty)
-                      Text(
-                        isHindi ? book.authorHi : book.author,
-                        style: AppTextStyles.bodySmall,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            isHindi ? book.titleHi : book.title,
+                            style: AppTextStyles.h3.copyWith(fontSize: 13),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (book.author.isNotEmpty)
+                            Text(
+                              isHindi ? book.authorHi : book.author,
+                              style: AppTextStyles.bodySmall,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
                       ),
+                    ),
+                    if (isDownloaded) ...[
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: () {
+                          showDeletePdfConfirmationDialog(
+                            context: context,
+                            book: book,
+                            isHindi: isHindi,
+                            onDeleted: () async {
+                              await ref
+                                  .read(downloadedBookIdsProvider.notifier)
+                                  .deleteBook(book.id);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      isHindi
+                                          ? 'ग्रंथ डिवाइस स्टोरेज से हटा दिया गया 🗑️'
+                                          : 'Holy Book deleted from device 🗑️',
+                                    ),
+                                    backgroundColor: Colors.red.shade700,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.delete_outline_rounded,
+                            size: 16,
+                            color: Colors.red.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -686,6 +822,35 @@ class _BookDetailSheetState extends ConsumerState<_BookDetailSheet> {
     }
   }
 
+  Future<void> _deletePdf() async {
+    showDeletePdfConfirmationDialog(
+      context: context,
+      book: widget.book,
+      isHindi: widget.isHindi,
+      onDeleted: () async {
+        await ref
+            .read(downloadedBookIdsProvider.notifier)
+            .deleteBook(widget.book.id);
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                widget.isHindi
+                    ? 'पवित्र ग्रंथ डिवाइस स्टोरेज से हटा दिया गया 🗑️'
+                    : 'Holy Book deleted from device 🗑️',
+              ),
+              backgroundColor: Colors.red.shade700,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final book = widget.book;
@@ -787,67 +952,97 @@ class _BookDetailSheetState extends ConsumerState<_BookDetailSheet> {
               const SizedBox(height: 22),
             ],
 
-            // Action buttons: Read PDF & Download
-            Row(
-              children: [
-                // Download button
-                Expanded(
-                  flex: 2,
-                  child: OutlinedButton.icon(
-                    onPressed: _downloading ? null : _downloadPdf,
-                    icon: _downloading
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Color(0xFF2E7D32),
-                            ),
-                          )
-                        : const Icon(Icons.download_rounded, size: 20),
-                    label: Text(
-                      isHindi ? 'डाउनलोड' : 'Save',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+            // Action buttons: Read PDF & Download / Delete
+            Builder(builder: (context) {
+              final isDownloaded =
+                  ref.watch(downloadedBookIdsProvider).contains(book.id);
+
+              return Row(
+                children: [
+                  if (isDownloaded)
+                    // Delete button
+                    Expanded(
+                      flex: 2,
+                      child: OutlinedButton.icon(
+                        onPressed: _deletePdf,
+                        icon: const Icon(Icons.delete_outline_rounded,
+                            size: 20, color: Colors.red),
+                        label: Text(
+                          isHindi ? 'हटाएं' : 'Delete',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600, color: Colors.red),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: BorderSide(
+                              color: Colors.red.shade400, width: 1.5),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    // Download button
+                    Expanded(
+                      flex: 2,
+                      child: OutlinedButton.icon(
+                        onPressed: _downloading ? null : _downloadPdf,
+                        icon: _downloading
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Color(0xFF2E7D32),
+                                ),
+                              )
+                            : const Icon(Icons.download_rounded, size: 20),
+                        label: Text(
+                          isHindi ? 'डाउनलोड' : 'Save',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF2E7D32),
+                          side: const BorderSide(
+                              color: Color(0xFF2E7D32), width: 1.5),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ),
                     ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF2E7D32),
-                      side: const BorderSide(
-                          color: Color(0xFF2E7D32), width: 1.5),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  const SizedBox(width: 12),
+                  // Read PDF button
+                  Expanded(
+                    flex: 3,
+                    child: ElevatedButton.icon(
+                      onPressed: _openPdf,
+                      icon: const Icon(Icons.chrome_reader_mode_rounded,
+                          size: 20),
+                      label: Text(
+                        isHindi ? 'ग्रंथ पढ़ें' : 'Read PDF',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2E7D32),
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                // Read PDF button
-                Expanded(
-                  flex: 3,
-                  child: ElevatedButton.icon(
-                    onPressed: _openPdf,
-                    icon:
-                        const Icon(Icons.chrome_reader_mode_rounded, size: 20),
-                    label: Text(
-                      isHindi ? 'ग्रंथ पढ़ें' : 'Read PDF',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2E7D32),
-                      foregroundColor: Colors.white,
-                      elevation: 2,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+                ],
+              );
+            }),
           ],
         ),
       ),

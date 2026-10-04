@@ -28,6 +28,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
   int _currentPage = 1;
   int _totalPages = 0;
   bool _downloading = false;
+  bool _isSavedLocally = false;
   PDFViewController? _pdfController;
 
   @override
@@ -50,6 +51,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
         if (mounted) {
           setState(() {
             _localPath = localSaved.path;
+            _isSavedLocally = true;
             _isLoading = false;
           });
         }
@@ -63,6 +65,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
           if (mounted) {
             setState(() {
               _localPath = extSaved.path;
+              _isSavedLocally = true;
               _isLoading = false;
             });
           }
@@ -102,6 +105,7 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
         await File(_localPath!).copy(target.path);
       }
       if (mounted) {
+        setState(() => _isSavedLocally = true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -130,6 +134,88 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
       }
     } finally {
       if (mounted) setState(() => _downloading = false);
+    }
+  }
+
+  Future<void> _deleteFromDevice() async {
+    final title = widget.isHindi ? widget.book.titleHi : widget.book.title;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.delete_outline_rounded,
+                color: Colors.red, size: 24),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                widget.isHindi ? 'ग्रंथ हटाएं?' : 'Delete Scripture?',
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          widget.isHindi
+              ? 'क्या आप "${title.isNotEmpty ? title : 'यह ग्रंथ'}" को डिवाइस से हटाना चाहते हैं?'
+              : 'Do you want to delete "$title" from your device storage?',
+          style: const TextStyle(fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              widget.isHindi ? 'रद्द करें' : 'Cancel',
+              style: const TextStyle(color: Colors.black54),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(widget.isHindi ? 'हटाएं' : 'Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final docDir = await getApplicationDocumentsDirectory();
+        final docTarget = File('${docDir.path}/${widget.book.id}_scripture.pdf');
+        if (docTarget.existsSync()) await docTarget.delete();
+
+        final extDir = await getExternalStorageDirectory();
+        if (extDir != null) {
+          final target = File('${extDir.path}/${widget.book.id}_scripture.pdf');
+          if (target.existsSync()) await target.delete();
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                widget.isHindi
+                    ? 'पवित्र ग्रंथ डिवाइस स्टोरेज से हटा दिया गया 🗑️'
+                    : 'Holy Book deleted from device 🗑️',
+              ),
+              backgroundColor: Colors.red.shade700,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+          Navigator.pop(context);
+        }
+      } catch (_) {}
     }
   }
 
@@ -176,7 +262,15 @@ class _PdfReaderScreenState extends State<PdfReaderScreen> {
           ],
         ),
         actions: [
-          if (_localPath != null)
+          if (_isSavedLocally)
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded,
+                  color: Colors.white),
+              tooltip:
+                  widget.isHindi ? 'हटाएं' : 'Delete from device',
+              onPressed: _deleteFromDevice,
+            )
+          else if (_localPath != null)
             IconButton(
               icon: _downloading
                   ? const SizedBox(

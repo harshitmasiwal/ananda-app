@@ -8,6 +8,7 @@ import '../../core/providers/content_providers.dart';
 import '../../core/models/wallpaper_model.dart';
 import '../../core/services/wallpaper_service.dart';
 import '../../shared/widgets/language_toggle.dart';
+import '../../shared/widgets/no_internet_banner.dart';
 
 class WallpapersScreen extends ConsumerWidget {
   const WallpapersScreen({super.key});
@@ -18,16 +19,29 @@ class WallpapersScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
+      body: Stack(
         children: [
-          // ── Header ──────────────────────────────────────────────────────
-          _WallpapersHeader(isHindi: isHindi),
+          Column(
+            children: [
+              // ── Header ──────────────────────────────────────────────────────
+              _WallpapersHeader(isHindi: isHindi),
 
-          // ── Sort Selector: Latest vs Popular ──────────────────────────────
-          const _WallpaperSortSelector(),
+              // ── Sort Selector: Latest vs Popular ──────────────────────────────
+              const _WallpaperSortSelector(),
 
-          // ── Wallpaper Grid ───────────────────────────────────────────────
-          const Expanded(child: _WallpaperGrid()),
+              // ── Wallpaper Grid ───────────────────────────────────────────────
+              const Expanded(child: _WallpaperGrid()),
+            ],
+          ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 4,
+            child: SafeArea(
+              top: false,
+              child: NoInternetBottomCard(),
+            ),
+          ),
         ],
       ),
     );

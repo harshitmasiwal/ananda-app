@@ -27,6 +27,8 @@ dependencies:
   http: ^1.6.0
   cached_network_image: ^3.4.1
   flutter_cache_manager: ^3.4.1
+  connectivity_plus: ^6.1.1
+  shared_preferences: ^2.3.5
 
   # Audio playback
   just_audio: ^0.9.42

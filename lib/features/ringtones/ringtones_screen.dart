@@ -9,76 +9,121 @@ import '../../core/models/ringtone_model.dart';
 import '../../core/services/audio_player_service.dart';
 import '../../core/services/ringtone_service.dart';
 import '../../shared/widgets/language_toggle.dart';
+import '../../shared/widgets/no_internet_banner.dart';
 
 // ─── Currently previewing ringtone provider ───────────────────────────────────
 final _previewingRingtoneProvider = StateProvider<String?>((ref) => null);
 
-class RingtonesScreen extends ConsumerWidget {
+class RingtonesScreen extends ConsumerStatefulWidget {
   const RingtonesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RingtonesScreen> createState() => _RingtonesScreenState();
+}
+
+class _RingtonesScreenState extends ConsumerState<RingtonesScreen> {
+  @override
+  void dispose() {
+    // Immediately stop ringtone playback when user closes or leaves this screen
+    AudioPlayerService.instance.stopRingtone();
+    super.dispose();
+  }
+
+  void _stopPlayback() {
+    AudioPlayerService.instance.stopRingtone();
+    ref.read(_previewingRingtoneProvider.notifier).state = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isHindi = ref.watch(isHindiProvider);
     final asyncRingtones = ref.watch(sortedRingtonesProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          // ── Header ──────────────────────────────────────────────────────
-          _RingtonesHeader(isHindi: isHindi),
-
-          // ── Sort Selector: Latest vs Popular ──────────────────────────────
-          const _RingtoneSortSelector(),
-
-          // ── Ringtone List ────────────────────────────────────────────────
-          Expanded(
-            child: asyncRingtones.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: Color(0xFF6A1B9A)),
-              ),
-              error: (_, __) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.wifi_off_rounded,
-                        color: AppColors.textSecondary, size: 48),
-                    const SizedBox(height: 12),
-                    Text(
-                      isHindi
-                          ? 'रिंगटोन लोड नहीं हो सके'
-                          : 'Could not load ringtones',
-                      style: AppTextStyles.body,
-                    ),
-                  ],
-                ),
-              ),
-              data: (ringtones) {
-                if (ringtones.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text('🎵', style: TextStyle(fontSize: 48)),
-                        const SizedBox(height: 12),
-                        Text(
-                          isHindi
-                              ? 'कोई रिंगटोन नहीं मिला'
-                              : 'No ringtones available',
-                          style: AppTextStyles.body,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return _RingtoneList(
-                  ringtones: ringtones,
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) {
+          _stopPlayback();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: Stack(
+          children: [
+            Column(
+              children: [
+                // ── Header ──────────────────────────────────────────────────────
+                _RingtonesHeader(
                   isHindi: isHindi,
-                );
-              },
+                  onBack: () {
+                    _stopPlayback();
+                    Navigator.pop(context);
+                  },
+                ),
+
+                // ── Sort Selector: Latest vs Popular ──────────────────────────────
+                const _RingtoneSortSelector(),
+
+                // ── Ringtone List ────────────────────────────────────────────────
+                Expanded(
+                  child: asyncRingtones.when(
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(color: Color(0xFF6A1B9A)),
+                    ),
+                    error: (_, __) => Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.wifi_off_rounded,
+                              color: AppColors.textSecondary, size: 48),
+                          const SizedBox(height: 12),
+                          Text(
+                            isHindi
+                                ? 'रिंगटोन लोड नहीं हो सके'
+                                : 'Could not load ringtones',
+                            style: AppTextStyles.body,
+                          ),
+                        ],
+                      ),
+                    ),
+                    data: (ringtones) {
+                      if (ringtones.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('🎵', style: TextStyle(fontSize: 48)),
+                              const SizedBox(height: 12),
+                              Text(
+                                isHindi
+                                    ? 'कोई रिंगटोन नहीं मिला'
+                                    : 'No ringtones available',
+                                style: AppTextStyles.body,
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      return _RingtoneList(
+                        ringtones: ringtones,
+                        isHindi: isHindi,
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 4,
+              child: SafeArea(
+                top: false,
+                child: NoInternetBottomCard(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -87,7 +132,8 @@ class RingtonesScreen extends ConsumerWidget {
 // ─── Header ───────────────────────────────────────────────────────────────────
 class _RingtonesHeader extends StatelessWidget {
   final bool isHindi;
-  const _RingtonesHeader({required this.isHindi});
+  final VoidCallback onBack;
+  const _RingtonesHeader({required this.isHindi, required this.onBack});
 
   @override
   Widget build(BuildContext context) {
@@ -106,12 +152,18 @@ class _RingtonesHeader extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 16, 20),
+          padding: const EdgeInsets.fromLTRB(12, 12, 16, 20),
           child: Row(
             children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                    color: Colors.white, size: 22),
+                onPressed: onBack,
+              ),
+              const SizedBox(width: 4),
               const Icon(Icons.music_note_rounded,
-                  color: Colors.white, size: 28),
-              const SizedBox(width: 10),
+                  color: Colors.white, size: 26),
+              const SizedBox(width: 8),
               Text(
                 isHindi ? 'रिंगटोन' : 'Ringtones',
                 style: AppTextStyles.appName

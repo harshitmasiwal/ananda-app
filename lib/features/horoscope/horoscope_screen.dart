@@ -3,10 +3,14 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/providers/language_provider.dart';
+import '../../core/services/connectivity_service.dart';
 import '../../shared/widgets/language_toggle.dart';
+import '../../shared/widgets/no_internet_banner.dart';
+import '../../shared/widgets/no_internet_card.dart';
 
 // ─── API Config ────────────────────────────────────────────────────────────────
 const _apiNinjasKey = 'HcRCPmdAe9ukZfXgkFz7FZHcbtLDwLkXgQm6rRzB';
@@ -219,6 +223,8 @@ class HoroscopeResult {
   final String date;
   final bool isLoading;
   final String? error;
+  final bool isFromCache;
+  final bool isOfflineNotFetched;
 
   const HoroscopeResult({
     required this.sign,
@@ -227,11 +233,47 @@ class HoroscopeResult {
     this.date = '',
     this.isLoading = false,
     this.error,
+    this.isFromCache = false,
+    this.isOfflineNotFetched = false,
   });
 }
 
-// ─── API-Ninjas Horoscope Fetch + Google Translate ────────────────────────────
-Future<HoroscopeResult> fetchHoroscope(String sign) async {
+// ─── API-Ninjas Horoscope Fetch + Cache + Google Translate ────────────────────
+Future<HoroscopeResult> fetchHoroscope(String sign, {bool isOnline = true}) async {
+  final now = DateTime.now();
+  final todayStr =
+      '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  final cacheKey = 'ananda_horoscope_${sign}_$todayStr';
+
+  SharedPreferences? prefs;
+  try {
+    prefs = await SharedPreferences.getInstance();
+    final cached = prefs.getString(cacheKey);
+    if (cached != null && cached.isNotEmpty) {
+      final map = json.decode(cached) as Map<String, dynamic>;
+      return HoroscopeResult(
+        sign: sign,
+        horoscope: (map['horoscope'] as String?) ?? '',
+        horoscopeHi: (map['horoscopeHi'] as String?) ?? '',
+        date: (map['date'] as String?) ?? todayStr,
+        isLoading: false,
+        isFromCache: true,
+        isOfflineNotFetched: false,
+      );
+    }
+  } catch (_) {}
+
+  // If not cached and device has no internet connection, show no-internet state
+  if (!isOnline) {
+    return HoroscopeResult(
+      sign: sign,
+      date: todayStr,
+      isLoading: false,
+      isOfflineNotFetched: true,
+      error: 'NO_INTERNET',
+    );
+  }
+
   try {
     // 1. Fetch from API-Ninjas
     final uri = Uri.parse(
@@ -247,7 +289,7 @@ Future<HoroscopeResult> fetchHoroscope(String sign) async {
 
     final data = json.decode(response.body);
     final englishText = (data['horoscope'] as String?) ?? '';
-    final date = (data['date'] as String?) ?? '';
+    final date = (data['date'] as String?) ?? todayStr;
 
     // 2. Translate to Hindi using free Google Translate endpoint
     String hindiText = '';
@@ -261,16 +303,28 @@ Future<HoroscopeResult> fetchHoroscope(String sign) async {
           .timeout(const Duration(seconds: 8));
       if (tRes.statusCode == 200) {
         final tData = json.decode(tRes.body);
-        // Response is a nested list: [[["translated","original",...],...],...]
         final parts = tData[0] as List<dynamic>;
         hindiText = parts
             .map((p) => (p as List<dynamic>)[0].toString())
             .join('');
       }
     } catch (_) {
-      // Hindi translation failed — fall back to English
       hindiText = englishText;
     }
+
+    // 3. Cache today's prediction
+    try {
+      if (prefs != null) {
+        await prefs.setString(
+          cacheKey,
+          json.encode({
+            'horoscope': englishText,
+            'horoscopeHi': hindiText,
+            'date': date,
+          }),
+        );
+      }
+    } catch (_) {}
 
     return HoroscopeResult(
       sign: sign,
@@ -278,17 +332,16 @@ Future<HoroscopeResult> fetchHoroscope(String sign) async {
       horoscopeHi: hindiText,
       date: date,
       isLoading: false,
+      isFromCache: false,
+      isOfflineNotFetched: false,
     );
   } catch (e) {
-    // Full offline fallback
+    // On network failure if not cached, flag as offline un-fetched
     return HoroscopeResult(
       sign: sign,
-      horoscope: _offlinePredictions[sign] ??
-          'A day filled with divine grace. Seek blessings through prayer and meditation.',
-      horoscopeHi: _offlinePredictionsHi[sign] ??
-          'आज का दिन दैवीय कृपा से भरा है। प्रार्थना और ध्यान के माध्यम से आशीर्वाद प्राप्त करें।',
-      date: '',
+      date: todayStr,
       isLoading: false,
+      isOfflineNotFetched: true,
       error: e.toString(),
     );
   }
@@ -400,7 +453,8 @@ class _HoroscopeScreenState extends ConsumerState<HoroscopeScreen>
 
   Future<void> _loadHoroscope(String sign) async {
     setState(() => _loadingHoroscope = true);
-    final result = await fetchHoroscope(sign);
+    final isOnline = ref.read(isOnlineProvider);
+    final result = await fetchHoroscope(sign, isOnline: isOnline);
     if (mounted) {
       setState(() {
         _horoscopeResult = result;
@@ -415,8 +469,10 @@ class _HoroscopeScreenState extends ConsumerState<HoroscopeScreen>
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
+      body: Stack(
         children: [
+          Column(
+            children: [
           // ── Header ──────────────────────────────────────────────────────
           Container(
             decoration: const BoxDecoration(
@@ -479,24 +535,36 @@ class _HoroscopeScreenState extends ConsumerState<HoroscopeScreen>
             ),
           ),
 
-          // ── Tab views ───────────────────────────────────────────────────
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _PanchangTab(isHindi: isHindi, data: _panchangData),
-                _HoroscopeTab(
-                  isHindi: isHindi,
-                  signData: _signData,
-                  selectedSign: _selectedSign,
-                  horoscopeResult: _horoscopeResult,
-                  isLoading: _loadingHoroscope,
-                  onSignChanged: (s) {
-                    setState(() => _selectedSign = s);
-                    _loadHoroscope(s);
-                  },
+              // ── Tab views ───────────────────────────────────────────────────
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _PanchangTab(isHindi: isHindi, data: _panchangData),
+                    _HoroscopeTab(
+                      isHindi: isHindi,
+                      signData: _signData,
+                      selectedSign: _selectedSign,
+                      horoscopeResult: _horoscopeResult,
+                      isLoading: _loadingHoroscope,
+                      onSignChanged: (s) {
+                        setState(() => _selectedSign = s);
+                        _loadHoroscope(s);
+                      },
+                      onRetry: () => _loadHoroscope(_selectedSign),
+                    ),
+                  ],
                 ),
-              ],
+              ),
+            ],
+          ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 4,
+            child: SafeArea(
+              top: false,
+              child: NoInternetBottomCard(),
             ),
           ),
         ],
@@ -866,6 +934,7 @@ class _HoroscopeTab extends StatelessWidget {
   final HoroscopeResult? horoscopeResult;
   final bool isLoading;
   final ValueChanged<String> onSignChanged;
+  final VoidCallback onRetry;
 
   const _HoroscopeTab({
     required this.isHindi,
@@ -874,6 +943,7 @@ class _HoroscopeTab extends StatelessWidget {
     required this.horoscopeResult,
     required this.isLoading,
     required this.onSignChanged,
+    required this.onRetry,
   });
 
   @override
@@ -1034,6 +1104,41 @@ class _HoroscopeTab extends StatelessWidget {
     HoroscopeResult? result,
     bool isHindi,
   ) {
+    // If not fetched today and device is offline, show dedicated No Internet state
+    if (result?.isOfflineNotFetched == true) {
+      return Container(
+        key: ValueKey('offline_${selected.$1}'),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: const Color(0xFFFF6B00).withValues(alpha: 0.25),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            NoInternetCard(
+              isHindi: isHindi,
+              customMessage:
+                  'Today\'s horoscope for ${selected.$3} has not been fetched yet. Please connect to the internet to load today\'s predictions.',
+              customMessageHi:
+                  '${selected.$4} राशि का आज का राशिफल अभी लोड नहीं हुआ है। कृपया आज की भविष्यवाणियां देखने के लिए इंटरनेट से कनेक्ट करें।',
+              onRetry: () async => onRetry(),
+            ),
+          ],
+        ),
+      );
+    }
+
     final horoscopeText = isHindi
         ? (result?.horoscopeHi.isNotEmpty == true
             ? result!.horoscopeHi
@@ -1134,22 +1239,29 @@ class _HoroscopeTab extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // ── Source badge ──────────────────────────────────────────
+          // ── Source / Cache badge ──────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
             child: Row(
               children: [
-                const Icon(Icons.verified_rounded,
-                    color: AppColors.gold, size: 14),
+                Icon(
+                  result?.isFromCache == true
+                      ? Icons.offline_pin_rounded
+                      : Icons.verified_rounded,
+                  color: AppColors.gold,
+                  size: 15,
+                ),
                 const SizedBox(width: 6),
                 Text(
-                  result?.error == null
+                  result?.isFromCache == true
                       ? (isHindi
+                          ? 'आज का कैश्ड राशिफल'
+                          : 'Cached for today')
+                      : (isHindi
                           ? 'API Ninjas से लाइव डेटा'
-                          : 'Live data via API-Ninjas')
-                      : (isHindi ? 'ऑफलाइन मोड' : 'Offline mode'),
+                          : 'Live data via API-Ninjas'),
                   style: const TextStyle(
-                      color: Colors.white54, fontSize: 11),
+                      color: Colors.white70, fontSize: 11),
                 ),
               ],
             ),

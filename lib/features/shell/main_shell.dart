@@ -8,6 +8,7 @@ import '../bhajans/bhajans_screen.dart';
 import '../holy_books/holy_books_screen.dart';
 
 import 'package:permission_handler/permission_handler.dart';
+import '../../shared/widgets/no_internet_banner.dart';
 
 // Tracks the active bottom‑nav tab (0 = Home, 1 = Bhajans, 2 = Books)
 final selectedTabProvider = StateProvider<int>((ref) => 0);
@@ -50,7 +51,17 @@ class _MainShellState extends ConsumerState<MainShell> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: IndexedStack(index: tab, children: _screens),
+      body: Stack(
+        children: [
+          IndexedStack(index: tab, children: _screens),
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 4,
+            child: NoInternetBottomCard(),
+          ),
+        ],
+      ),
       bottomNavigationBar: _BottomNav(
         selectedIndex: tab,
         isHindi: isHindi,
