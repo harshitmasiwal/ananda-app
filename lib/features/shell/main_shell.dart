@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
@@ -6,9 +7,11 @@ import '../../core/providers/language_provider.dart';
 import '../home/home_screen.dart';
 import '../bhajans/bhajans_screen.dart';
 import '../holy_books/holy_books_screen.dart';
-
 import 'package:permission_handler/permission_handler.dart';
 import '../../shared/widgets/no_internet_banner.dart';
+
+import '../../shared/widgets/animated_devotional_background.dart';
+import '../../shared/widgets/bouncing_tap.dart';
 
 // Tracks the active bottom‑nav tab (0 = Home, 1 = Bhajans, 2 = Books)
 final selectedTabProvider = StateProvider<int>((ref) => 0);
@@ -21,6 +24,8 @@ class MainShell extends ConsumerStatefulWidget {
 }
 
 class _MainShellState extends ConsumerState<MainShell> {
+  late final PageController _pageController;
+
   static const _screens = [
     HomeScreen(),
     BhajansScreen(),
@@ -30,9 +35,17 @@ class _MainShellState extends ConsumerState<MainShell> {
   @override
   void initState() {
     super.initState();
+    _pageController =
+        PageController(initialPage: ref.read(selectedTabProvider));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _requestNotificationPermission();
     });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   Future<void> _requestNotificationPermission() async {
@@ -44,28 +57,82 @@ class _MainShellState extends ConsumerState<MainShell> {
     } catch (_) {}
   }
 
+  Color _getActiveModeColor(int tab) {
+    switch (tab) {
+      case 0:
+        return AppColors.modeHome;     // Deep Dark Saffron Orange for Home
+      case 1:
+        return AppColors.modeBhajans;  // Royal Devotional Purple for Bhajans
+      case 2:
+        return AppColors.modeBooks;    // Sacred Forest Green for Books
+      default:
+        return AppColors.modeHome;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tab = ref.watch(selectedTabProvider);
     final isHindi = ref.watch(isHindiProvider);
+    final activeColor = _getActiveModeColor(tab);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          IndexedStack(index: tab, children: _screens),
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 4,
-            child: NoInternetBottomCard(),
-          ),
-        ],
+    // Keep PageView in sync if tab is changed externally
+    ref.listen<int>(selectedTabProvider, (prev, next) {
+      if (_pageController.hasClients &&
+          _pageController.page?.round() != next) {
+        _pageController.animateToPage(
+          next,
+          duration: const Duration(milliseconds: 320),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
       ),
-      bottomNavigationBar: _BottomNav(
-        selectedIndex: tab,
-        isHindi: isHindi,
-        onTap: (i) => ref.read(selectedTabProvider.notifier).state = i,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: AnimatedDevotionalBackground(
+          pageController: _pageController,
+          child: Stack(
+            children: [
+              // Horizontal swipe between Home, Bhajans, and Books
+              PageView(
+                controller: _pageController,
+                physics: const BouncingScrollPhysics(),
+                onPageChanged: (i) {
+                  ref.read(selectedTabProvider.notifier).state = i;
+                },
+                children: _screens,
+              ),
+              const Positioned(
+                left: 0,
+                right: 0,
+                bottom: 4,
+                child: NoInternetBottomCard(),
+              ),
+            ],
+          ),
+        ),
+        bottomNavigationBar: _BottomNav(
+          selectedIndex: tab,
+          activeColor: activeColor,
+          isHindi: isHindi,
+          onTap: (i) {
+            ref.read(selectedTabProvider.notifier).state = i;
+            _pageController.animateToPage(
+              i,
+              duration: const Duration(milliseconds: 320),
+              curve: Curves.easeInOut,
+            );
+          },
+        ),
       ),
     );
   }
@@ -109,11 +176,13 @@ const _navItems = [
 // ─── Bottom Nav bar ───────────────────────────────────────────────────────────
 class _BottomNav extends StatelessWidget {
   final int selectedIndex;
+  final Color activeColor;
   final bool isHindi;
   final ValueChanged<int> onTap;
 
   const _BottomNav({
     required this.selectedIndex,
+    required this.activeColor,
     required this.isHindi,
     required this.onTap,
   });
@@ -125,8 +194,8 @@ class _BottomNav extends StatelessWidget {
         color: AppColors.surface,
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.18),
-            blurRadius: 24,
+            color: activeColor.withValues(alpha: 0.14),
+            blurRadius: 20,
             offset: const Offset(0, -4),
           ),
         ],
@@ -142,9 +211,10 @@ class _BottomNav extends StatelessWidget {
               final item = _navItems[i];
               final active = i == selectedIndex;
               return Expanded(
-                child: GestureDetector(
+                child: BouncingTap(
                   onTap: () => onTap(i),
                   behavior: HitTestBehavior.opaque,
+                  scaleFactor: 0.92,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -155,14 +225,14 @@ class _BottomNav extends StatelessWidget {
                             horizontal: 18, vertical: 6),
                         decoration: BoxDecoration(
                           color: active
-                              ? AppColors.primary.withValues(alpha: 0.12)
+                              ? activeColor.withValues(alpha: 0.12)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(24),
                         ),
                         child: Icon(
                           active ? item.activeIcon : item.icon,
                           color: active
-                              ? AppColors.primary
+                              ? activeColor
                               : AppColors.navInactive,
                           size: 24,
                         ),
@@ -172,7 +242,7 @@ class _BottomNav extends StatelessWidget {
                         duration: const Duration(milliseconds: 200),
                         style: AppTextStyles.navLabel.copyWith(
                           color: active
-                              ? AppColors.primary
+                              ? activeColor
                               : AppColors.navInactive,
                           fontWeight: active
                               ? FontWeight.w700

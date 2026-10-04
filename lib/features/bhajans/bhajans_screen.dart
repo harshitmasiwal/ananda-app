@@ -9,6 +9,7 @@ import '../../core/providers/audio_providers.dart';
 import '../../core/models/bhajan_model.dart';
 import '../../core/services/audio_player_service.dart';
 import '../../shared/widgets/language_toggle.dart';
+import '../../shared/widgets/bouncing_tap.dart';
 
 class BhajansScreen extends ConsumerWidget {
   const BhajansScreen({super.key});
@@ -18,7 +19,7 @@ class BhajansScreen extends ConsumerWidget {
     final isHindi = ref.watch(isHindiProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: Column(
         children: [
           _BhajansHeader(isHindi: isHindi),
@@ -43,7 +44,11 @@ class _BhajansHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        gradient: AppColors.saffronGradient,
+        gradient: LinearGradient(
+          colors: [Color(0xFF4A148C), Color(0xFF6A1B9A), Color(0xFF7B1FA2)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(28),
           bottomRight: Radius.circular(28),
@@ -340,10 +345,11 @@ class _NowPlayingCardState extends ConsumerState<_NowPlayingCard>
               ),
               const SizedBox(width: 16),
               // Big play/pause
-              GestureDetector(
+              BouncingTap(
                 onTap: hasTrack
                     ? () => AudioPlayerService.instance.togglePlayPause()
                     : null,
+                scaleFactor: 0.92,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
                   width: 58,
@@ -494,8 +500,9 @@ class _ControlBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return BouncingTap(
       onTap: enabled ? onTap : null,
+      scaleFactor: 0.88,
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
@@ -577,22 +584,23 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return BouncingTap(
       onTap: onTap,
+      scaleFactor: 0.92,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.primary : AppColors.cardBg,
+          color: isActive ? const Color(0xFF6A1B9A) : AppColors.cardBg,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isActive ? AppColors.primaryDark : AppColors.divider,
+            color: isActive ? const Color(0xFF4A148C) : AppColors.divider,
             width: 1.5,
           ),
           boxShadow: isActive
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.35),
+                    color: const Color(0xFF6A1B9A).withValues(alpha: 0.35),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
@@ -676,11 +684,12 @@ class _BhajanTile extends ConsumerWidget {
     final isCurrent = currentBhajan?.id == bhajan.id;
     final accent = _catColors[bhajan.category] ?? AppColors.primary;
 
-    return GestureDetector(
+    return BouncingTap(
       onTap: () {
         // Pass the full visible queue so sequential/shuffle playback works
         AudioPlayerService.instance.playBhajan(bhajan, queue: queue);
       },
+      scaleFactor: 0.97,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(

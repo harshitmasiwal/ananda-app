@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,6 +12,8 @@ import '../../core/services/connectivity_service.dart';
 import '../../shared/widgets/language_toggle.dart';
 import '../../shared/widgets/no_internet_banner.dart';
 import '../../shared/widgets/no_internet_card.dart';
+import '../../shared/widgets/animated_devotional_background.dart';
+import '../../shared/widgets/bouncing_tap.dart';
 
 // ─── API Config ────────────────────────────────────────────────────────────────
 const _apiNinjasKey = 'HcRCPmdAe9ukZfXgkFz7FZHcbtLDwLkXgQm6rRzB';
@@ -467,11 +470,19 @@ class _HoroscopeScreenState extends ConsumerState<HoroscopeScreen>
   Widget build(BuildContext context) {
     final isHindi = ref.watch(isHindiProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          Column(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: AnimatedDevotionalBackground(
+          mode: DevotionalMode.horoscope,
+          child: Stack(
+            children: [
+            Column(
             children: [
           // ── Header ──────────────────────────────────────────────────────
           Container(
@@ -569,6 +580,8 @@ class _HoroscopeScreenState extends ConsumerState<HoroscopeScreen>
           ),
         ],
       ),
+      ),
+    ),
     );
   }
 }
@@ -979,8 +992,9 @@ class _HoroscopeTab extends StatelessWidget {
             itemBuilder: (_, i) {
               final sign = signData[i];
               final isActive = sign.$1 == selectedSign;
-              return GestureDetector(
+              return BouncingTap(
                 onTap: () => onSignChanged(sign.$1),
+                scaleFactor: 0.93,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(

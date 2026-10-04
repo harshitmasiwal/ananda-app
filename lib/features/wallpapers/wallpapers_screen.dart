@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/constants/app_colors.dart';
@@ -9,6 +10,8 @@ import '../../core/models/wallpaper_model.dart';
 import '../../core/services/wallpaper_service.dart';
 import '../../shared/widgets/language_toggle.dart';
 import '../../shared/widgets/no_internet_banner.dart';
+import '../../shared/widgets/animated_devotional_background.dart';
+import '../../shared/widgets/bouncing_tap.dart';
 
 class WallpapersScreen extends ConsumerWidget {
   const WallpapersScreen({super.key});
@@ -17,32 +20,42 @@ class WallpapersScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isHindi = ref.watch(isHindiProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          Column(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: AnimatedDevotionalBackground(
+          mode: DevotionalMode.wallpapers,
+          child: Stack(
             children: [
-              // ── Header ──────────────────────────────────────────────────────
-              _WallpapersHeader(isHindi: isHindi),
+              Column(
+                children: [
+                  // ── Header ──────────────────────────────────────────────────────
+                  _WallpapersHeader(isHindi: isHindi),
 
-              // ── Sort Selector: Latest vs Popular ──────────────────────────────
-              const _WallpaperSortSelector(),
+                  // ── Sort Selector: Latest vs Popular ──────────────────────────────
+                  const _WallpaperSortSelector(),
 
-              // ── Wallpaper Grid ───────────────────────────────────────────────
-              const Expanded(child: _WallpaperGrid()),
+                  // ── Wallpaper Grid ───────────────────────────────────────────────
+                  const Expanded(child: _WallpaperGrid()),
+                ],
+              ),
+              const Positioned(
+                left: 0,
+                right: 0,
+                bottom: 4,
+                child: SafeArea(
+                  top: false,
+                  child: NoInternetBottomCard(),
+                ),
+              ),
             ],
           ),
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 4,
-            child: SafeArea(
-              top: false,
-              child: NoInternetBottomCard(),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -164,8 +177,9 @@ class _SortTabItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return BouncingTap(
       onTap: onTap,
+      scaleFactor: 0.94,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
@@ -313,9 +327,10 @@ class _WallpaperCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = isHindi ? wallpaper.titleHi : wallpaper.title;
 
-    return GestureDetector(
+    return BouncingTap(
       onTap: () => _openViewer(context),
       onLongPress: () => _showSetSheet(context),
+      scaleFactor: 0.95,
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),

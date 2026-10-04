@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
@@ -10,6 +11,8 @@ import '../../core/services/audio_player_service.dart';
 import '../../core/services/ringtone_service.dart';
 import '../../shared/widgets/language_toggle.dart';
 import '../../shared/widgets/no_internet_banner.dart';
+import '../../shared/widgets/animated_devotional_background.dart';
+import '../../shared/widgets/bouncing_tap.dart';
 
 // ─── Currently previewing ringtone provider ───────────────────────────────────
 final _previewingRingtoneProvider = StateProvider<String?>((ref) => null);
@@ -46,11 +49,19 @@ class _RingtonesScreenState extends ConsumerState<RingtonesScreen> {
           _stopPlayback();
         }
       },
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        body: Stack(
-          children: [
-            Column(
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: AnimatedDevotionalBackground(
+            mode: DevotionalMode.ringtones,
+            child: Stack(
+              children: [
+                Column(
               children: [
                 // ── Header ──────────────────────────────────────────────────────
                 _RingtonesHeader(
@@ -124,7 +135,9 @@ class _RingtonesScreenState extends ConsumerState<RingtonesScreen> {
             ),
           ],
         ),
+        ),
       ),
+    ),
     );
   }
 }
@@ -252,8 +265,9 @@ class _SortTabItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return BouncingTap(
       onTap: onTap,
+      scaleFactor: 0.94,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
@@ -348,109 +362,107 @@ class _RingtoneCard extends ConsumerWidget {
 
     final title = isHindi ? ringtone.titleHi : ringtone.title;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: isThisPlaying
-            ? const Color(0xFF6A1B9A).withValues(alpha: 0.05)
-            : AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
+    return BouncingTap(
+      scaleFactor: 0.97,
+      onTap: () async {
+        if (isThisPlaying) {
+          await AudioPlayerService.instance.togglePlayPause();
+        } else {
+          ref.read(_previewingRingtoneProvider.notifier).state =
+              ringtone.id;
+          await AudioPlayerService.instance.playRingtone(ringtone);
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
           color: isThisPlaying
-              ? const Color(0xFF6A1B9A).withValues(alpha: 0.4)
-              : AppColors.divider,
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
+              ? const Color(0xFF6A1B9A).withValues(alpha: 0.05)
+              : AppColors.surface,
           borderRadius: BorderRadius.circular(18),
-          onTap: () async {
-            if (isThisPlaying) {
-              await AudioPlayerService.instance.togglePlayPause();
-            } else {
-              ref.read(_previewingRingtoneProvider.notifier).state =
-                  ringtone.id;
-              await AudioPlayerService.instance.playRingtone(ringtone);
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              children: [
-                // Play / Pause Circle
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    gradient: isThisPlaying
-                        ? const LinearGradient(
-                            colors: [Color(0xFF6A1B9A), Color(0xFFAB47BC)],
-                          )
-                        : null,
-                    color: isThisPlaying
-                        ? null
-                        : const Color(0xFF6A1B9A).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    isActuallyPlaying
-                        ? Icons.pause_rounded
-                        : Icons.play_arrow_rounded,
-                    color: isThisPlaying
-                        ? Colors.white
-                        : const Color(0xFF6A1B9A),
-                    size: 26,
-                  ),
+          border: Border.all(
+            color: isThisPlaying
+                ? const Color(0xFF6A1B9A).withValues(alpha: 0.4)
+                : AppColors.divider,
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              // Play / Pause Circle
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  gradient: isThisPlaying
+                      ? const LinearGradient(
+                          colors: [Color(0xFF6A1B9A), Color(0xFFAB47BC)],
+                        )
+                      : null,
+                  color: isThisPlaying
+                      ? null
+                      : const Color(0xFF6A1B9A).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(width: 12),
+                child: Icon(
+                  isActuallyPlaying
+                      ? Icons.pause_rounded
+                      : Icons.play_arrow_rounded,
+                  color: isThisPlaying
+                      ? Colors.white
+                      : const Color(0xFF6A1B9A),
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 12),
 
-                // Title + Duration
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: AppTextStyles.h3.copyWith(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+              // Title + Duration
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTextStyles.h3.copyWith(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.graphic_eq_rounded,
+                          size: 13,
+                          color: const Color(0xFF6A1B9A).withValues(alpha: 0.7),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.graphic_eq_rounded,
-                            size: 13,
-                            color: const Color(0xFF6A1B9A).withValues(alpha: 0.7),
+                        const SizedBox(width: 4),
+                        Text(
+                          ringtone.durationLabel.isNotEmpty
+                              ? ringtone.durationLabel
+                              : (isHindi ? 'भक्तिमय' : 'Devotional'),
+                          style: AppTextStyles.bodySmall.copyWith(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            ringtone.durationLabel.isNotEmpty
-                                ? ringtone.durationLabel
-                                : (isHindi ? 'भक्तिमय' : 'Devotional'),
-                            style: AppTextStyles.bodySmall.copyWith(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
+              ),
 
                 // Animated Waveform when playing
                 if (isActuallyPlaying) ...[
@@ -486,8 +498,7 @@ class _RingtoneCard extends ConsumerWidget {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }
 

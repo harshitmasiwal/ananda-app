@@ -10,6 +10,7 @@ import '../../core/providers/language_provider.dart';
 import '../../core/providers/content_providers.dart';
 import '../../core/models/holy_book_model.dart';
 import '../../shared/widgets/language_toggle.dart';
+import '../../shared/widgets/bouncing_tap.dart';
 import 'pdf_reader_screen.dart';
 
 // ─── Book Tabs ────────────────────────────────────────────────────────────────
@@ -161,7 +162,7 @@ class HolyBooksScreen extends ConsumerWidget {
     final downloadedIds = ref.watch(downloadedBookIdsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: Column(
         children: [
           // ── Header ──────────────────────────────────────────────────────
@@ -178,7 +179,7 @@ class HolyBooksScreen extends ConsumerWidget {
           Expanded(
             child: asyncBooks.when(
               loading: () => const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
+                child: CircularProgressIndicator(color: Color(0xFF2E7D32)),
               ),
               error: (_, __) => Center(
                 child: Text('Unable to load books', style: AppTextStyles.body),
@@ -243,7 +244,7 @@ class _BooksHeader extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF2E7D32), Color(0xFF66BB6A)],
+          colors: [Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFF388E3C)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -310,9 +311,10 @@ class _BookCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return GestureDetector(
+    return BouncingTap(
       onTap: () => _openPdfReader(context, ref),
       onLongPress: () => _showBookSheet(context),
+      scaleFactor: 0.95,
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -604,8 +606,9 @@ class _TabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return BouncingTap(
       onTap: onTap,
+      scaleFactor: 0.94,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),

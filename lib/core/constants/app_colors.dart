@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Primary Saffron/Orange palette
-  static const Color primary = Color(0xFFFF6B00);
-  static const Color primaryLight = Color(0xFFFF9A3C);
-  static const Color primaryDark = Color(0xFFD44F00);
+  // Primary Dark Saffron/Orange palette (rich, high-contrast, devotional)
+  static const Color primary = Color(0xFFD84315);
+  static const Color primaryLight = Color(0xFFE65100);
+  static const Color primaryDark = Color(0xFFBF360C);
 
   // Gold accent
   static const Color gold = Color(0xFFFFD700);
@@ -23,11 +23,17 @@ class AppColors {
   static const Color textSecondary = Color(0xFF7A4E2D);
   static const Color textOnPrimary = Color(0xFFFFFFFF);
 
-  // Gradients
+  // Deep Saffron Gradients (High contrast for white text)
+  static const LinearGradient darkSaffronGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFBF360C), Color(0xFFD84315), Color(0xFFE65100)],
+  );
+
   static const LinearGradient saffronGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFFF6B00), Color(0xFFFF9A3C)],
+    colors: [Color(0xFFBF360C), Color(0xFFD84315)],
   );
 
   static const LinearGradient goldGradient = LinearGradient(
@@ -37,19 +43,39 @@ class AppColors {
   );
 
   static const LinearGradient headerGradient = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [Color(0xFFFF6B00), Color(0xFFFF9A3C), Color(0xFFFFF8F0)],
-    stops: [0.0, 0.6, 1.0],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFBF360C), Color(0xFFD84315), Color(0xFFE65100)],
+  );
+
+  // Distinct mode theme colors
+  static const Color modeHome = Color(0xFFD84315);       // Deep Dark Saffron
+  static const Color modeBhajans = Color(0xFF6A1B9A);    // Royal Purple
+  static const Color modeBooks = Color(0xFF2E7D32);      // Sacred Green
+  static const Color modeRingtones = Color(0xFF6A1B9A);  // Mystic Violet
+  static const Color modeHoroscope = Color(0xFF1565C0);  // Cosmic Blue
+  static const Color modeWallpapers = Color(0xFFFF6B00); // Amber Orange
+
+  // Mode header gradients
+  static const LinearGradient bhajanHeaderGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF4A148C), Color(0xFF6A1B9A), Color(0xFF7B1FA2)],
+  );
+
+  static const LinearGradient booksHeaderGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFF388E3C)],
   );
 
   // Section card gradients
   static const List<List<Color>> sectionGradients = [
-    [Color(0xFFFF6B00), Color(0xFFFFAB40)], // Wallpapers – orange
+    [Color(0xFFFF6B00), Color(0xFFFFAB40)], // Wallpapers – amber orange
     [Color(0xFF6A1B9A), Color(0xFFAB47BC)], // Ringtones – purple
     [Color(0xFF1565C0), Color(0xFF42A5F5)], // Horoscope – blue
     [Color(0xFF2E7D32), Color(0xFF66BB6A)], // Holy Books – green
-    [Color(0xFFC62828), Color(0xFFEF5350)], // Bhajans – red
+    [Color(0xFF6A1B9A), Color(0xFF8E24AA)], // Bhajans – royal purple
   ];
 
   // Misc
@@ -58,6 +84,6 @@ class AppColors {
   static const Color shimmerHighlight = Color(0xFFFFF3E0);
 
   // Nav
-  static const Color navActive = Color(0xFFFF6B00);
+  static const Color navActive = Color(0xFFD84315);
   static const Color navInactive = Color(0xFF7A4E2D);
 }

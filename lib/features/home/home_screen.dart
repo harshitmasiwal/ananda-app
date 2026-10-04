@@ -8,6 +8,7 @@ import '../../shared/widgets/language_toggle.dart';
 import '../wallpapers/wallpapers_screen.dart';
 import '../ringtones/ringtones_screen.dart';
 import '../horoscope/horoscope_screen.dart';
+import '../../shared/widgets/bouncing_tap.dart';
 
 // ─── Daily Shlokas ─────────────────────────────────────────────────────────────
 const _shlokas = [
@@ -82,31 +83,16 @@ class HomeScreen extends ConsumerWidget {
     final shloka = _todayShloka();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // ── Collapsing Header ──────────────────────────────────────────────
-          SliverAppBar(
-            expandedHeight: 210,
-            pinned: true,
-            stretch: true,
-            backgroundColor: AppColors.primary,
-            elevation: 0,
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: Center(child: LanguageToggle()),
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              stretchModes: const [StretchMode.zoomBackground],
-              collapseMode: CollapseMode.parallax,
-              background: _HomeHeader(
-                isHindi: isHindi,
-                greeting: _greeting(isHindi),
-                greetingEmoji: _greetingEmoji(),
-              ),
+          // ── Curved Header Card (matching Bhajans & Books) ─────────────────
+          SliverToBoxAdapter(
+            child: _HomeHeader(
+              isHindi: isHindi,
+              greeting: _greeting(isHindi),
+              greetingEmoji: _greetingEmoji(),
             ),
           ),
 
@@ -223,119 +209,150 @@ class _HomeHeader extends StatelessWidget {
   final bool isHindi;
   final String greeting;
   final String greetingEmoji;
-  const _HomeHeader(
-      {required this.isHindi,
-      required this.greeting,
-      required this.greetingEmoji});
+  const _HomeHeader({
+    required this.isHindi,
+    required this.greeting,
+    required this.greetingEmoji,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(gradient: AppColors.headerGradient),
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      decoration: const BoxDecoration(
+        gradient: AppColors.headerGradient,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x38BF360C),
+            blurRadius: 18,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
       child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Row(
-              children: [
-                // Om circle
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.18),
-                    border: Border.all(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 16, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  // Om circle
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.18),
+                      border: Border.all(
                         color: AppColors.gold.withValues(alpha: 0.6),
-                        width: 1.5),
-                  ),
-                  child: const Center(
-                    child: Text('ॐ',
+                        width: 1.5,
+                      ),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'ॐ',
                         style: TextStyle(
-                            fontSize: 24,
-                            color: AppColors.gold,
-                            fontWeight: FontWeight.w700)),
+                          fontSize: 24,
+                          color: AppColors.gold,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isHindi ? AppStrings.appNameHi : AppStrings.appName,
+                          style: AppTextStyles.appName.copyWith(
+                            color: Colors.white,
+                            fontSize: 23,
+                            fontWeight: FontWeight.w800,
+                            shadows: const [
+                              Shadow(
+                                color: Colors.black45,
+                                blurRadius: 10,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Text(greetingEmoji,
+                                style: const TextStyle(fontSize: 14)),
+                            const SizedBox(width: 6),
+                            Text(
+                              greeting,
+                              style: AppTextStyles.greeting.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                shadows: const [
+                                  Shadow(
+                                    color: Colors.black38,
+                                    blurRadius: 6,
+                                    offset: Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  LanguageToggle(),
+                ],
+              ),
+              const SizedBox(height: 14),
+              // Constant Devotional & Faith Tagline
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.22),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.gold.withValues(alpha: 0.35),
+                    width: 1,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Text(
-                      isHindi ? AppStrings.appNameHi : AppStrings.appName,
-                      style: AppTextStyles.appName,
+                    const Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 15,
+                      color: AppColors.gold,
                     ),
-                    Row(
-                      children: [
-                        Text(greetingEmoji,
-                            style: const TextStyle(fontSize: 13)),
-                        const SizedBox(width: 4),
-                        Text(greeting, style: AppTextStyles.greeting),
-                      ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        isHindi
+                            ? 'आस्था, भक्ति और आत्मिक शांति का पावन धाम'
+                            : 'Your Daily Sanctuary of Faith, Devotion & Peace',
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            // Quick stat pills
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _StatPill(
-                      icon: Icons.headphones_rounded,
-                      label: isHindi ? '50+ भजन' : '50+ Bhajans'),
-                  const SizedBox(width: 8),
-                  _StatPill(
-                      icon: Icons.wallpaper_rounded,
-                      label: isHindi ? '100+ वॉलपेपर' : '100+ Wallpapers'),
-                  const SizedBox(width: 8),
-                  _StatPill(
-                      icon: Icons.menu_book_rounded,
-                      label: isHindi ? '20+ ग्रंथ' : '20+ Books'),
-                  const SizedBox(width: 8),
-                  _StatPill(
-                      icon: Icons.auto_awesome_rounded,
-                      label: isHindi ? 'राशिफल' : 'Horoscope'),
-                ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
-  }
-}
-
-class _StatPill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _StatPill({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(20),
-        border:
-            Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: AppColors.gold),
-          const SizedBox(width: 4),
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 10,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500)),
-        ],
       ),
     );
   }
@@ -393,29 +410,32 @@ class _GreetingCardState extends State<_GreetingCard>
         ? weekdaysHi[now.weekday - 1]
         : weekdays[now.weekday - 1];
 
-    return AnimatedBuilder(
-      animation: _shimmerAnim,
-      builder: (context, child) {
-        return Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFFF6B00), Color(0xFFFF9A3C), Color(0xFFFFBF00)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.4),
-                blurRadius: 24,
-                offset: const Offset(0, 10),
+    return BouncingTap(
+      scaleFactor: 0.98,
+      onTap: () {},
+      child: AnimatedBuilder(
+        animation: _shimmerAnim,
+        builder: (context, child) {
+          return Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFBF360C), Color(0xFFD84315), Color(0xFFE65100)],
               ),
-            ],
-          ),
-          child: child,
-        );
-      },
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFBF360C).withValues(alpha: 0.45),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: child,
+          );
+        },
       child: Stack(
         children: [
           // Decorative circle top right
@@ -583,6 +603,7 @@ class _GreetingCardState extends State<_GreetingCard>
           ),
         ],
       ),
+    ),
     );
   }
 }
