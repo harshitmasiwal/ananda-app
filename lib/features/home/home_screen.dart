@@ -9,6 +9,51 @@ import '../wallpapers/wallpapers_screen.dart';
 import '../ringtones/ringtones_screen.dart';
 import '../horoscope/horoscope_screen.dart';
 
+// ─── Daily Shlokas ─────────────────────────────────────────────────────────────
+const _shlokas = [
+  (
+    'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन।',
+    'You have the right to perform your duties, but not to the fruits of action.',
+    'कर्म करो, फल की चिंता मत करो।',
+  ),
+  (
+    'सत्यं शिवं सुन्दरम्',
+    'Truth is God and God is Beauty.',
+    'सत्य ही ईश्वर है और ईश्वर ही सौन्दर्य।',
+  ),
+  (
+    'तमसो मा ज्योतिर्गमय',
+    'Lead me from darkness to light.',
+    'अंधकार से प्रकाश की ओर ले चलो।',
+  ),
+  (
+    'सर्वे भवन्तु सुखिनः',
+    'May all beings be happy and free from suffering.',
+    'सभी प्राणी सुखी हों।',
+  ),
+  (
+    'यत्र नार्यस्तु पूज्यन्ते, रमन्ते तत्र देवताः',
+    'Where women are revered, gods rejoice.',
+    'जहाँ नारी का सम्मान होता है, वहाँ देवता निवास करते हैं।',
+  ),
+  (
+    'अहं ब्रह्मास्मि',
+    'I am Brahman — the ultimate reality.',
+    'मैं ब्रह्म हूँ।',
+  ),
+  (
+    'वसुधैव कुटुम्बकम्',
+    'The whole world is one family.',
+    'पूरा विश्व एक परिवार है।',
+  ),
+];
+
+(String, String, String) _todayShloka() {
+  final idx = DateTime.now().day % _shlokas.length;
+  return _shlokas[idx];
+}
+
+// ─── Home Screen ──────────────────────────────────────────────────────────────
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -24,9 +69,17 @@ class HomeScreen extends ConsumerWidget {
     return AppStrings.eveningGreeting;
   }
 
+  String _greetingEmoji() {
+    final h = DateTime.now().hour;
+    if (h < 12) return '🌅';
+    if (h < 17) return '☀️';
+    return '🌙';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isHindi = ref.watch(isHindiProvider);
+    final shloka = _todayShloka();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -35,7 +88,7 @@ class HomeScreen extends ConsumerWidget {
         slivers: [
           // ── Collapsing Header ──────────────────────────────────────────────
           SliverAppBar(
-            expandedHeight: 200,
+            expandedHeight: 210,
             pinned: true,
             stretch: true,
             backgroundColor: AppColors.primary,
@@ -52,15 +105,19 @@ class HomeScreen extends ConsumerWidget {
               background: _HomeHeader(
                 isHindi: isHindi,
                 greeting: _greeting(isHindi),
+                greetingEmoji: _greetingEmoji(),
               ),
             ),
           ),
 
-          // ── "Namaste" Hero Card ────────────────────────────────────────────
+          // ── Daily Greeting Card ────────────────────────────────────────────
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
             sliver: SliverToBoxAdapter(
-              child: _NamasteCard(isHindi: isHindi),
+              child: _GreetingCard(
+                isHindi: isHindi,
+                shloka: shloka,
+              ),
             ),
           ),
 
@@ -68,9 +125,27 @@ class HomeScreen extends ConsumerWidget {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
             sliver: SliverToBoxAdapter(
-              child: Text(
-                isHindi ? 'सुविधाएँ' : 'Explore',
-                style: AppTextStyles.sectionHeader,
+              child: Row(
+                children: [
+                  Text(
+                    isHindi ? 'सुविधाएँ' : 'Explore',
+                    style: AppTextStyles.sectionHeader,
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      isHindi ? '6 सुविधाएँ' : '6 Features',
+                      style: AppTextStyles.bodySmall
+                          .copyWith(color: AppColors.primary, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -88,29 +163,42 @@ class HomeScreen extends ConsumerWidget {
               delegate: SliverChildListDelegate([
                 _FeatureCard(
                   icon: Icons.wallpaper_rounded,
-                  label: isHindi ? AppStrings.wallpapersTitleHi : AppStrings.wallpapersTitle,
-                  subtitle: isHindi ? AppStrings.wallpapersDescHi : AppStrings.wallpapersDesc,
+                  label: isHindi
+                      ? AppStrings.wallpapersTitleHi
+                      : AppStrings.wallpapersTitle,
+                  subtitle: isHindi
+                      ? AppStrings.wallpapersDescHi
+                      : AppStrings.wallpapersDesc,
                   gradient: AppColors.sectionGradients[0],
                   onTap: () => _push(context, const WallpapersScreen()),
                 ),
                 _FeatureCard(
                   icon: Icons.music_note_rounded,
-                  label: isHindi ? AppStrings.ringtonesTitleHi : AppStrings.ringtonesTitle,
-                  subtitle: isHindi ? AppStrings.ringtonesDescHi : AppStrings.ringtonesDesc,
+                  label: isHindi
+                      ? AppStrings.ringtonesTitleHi
+                      : AppStrings.ringtonesTitle,
+                  subtitle: isHindi
+                      ? AppStrings.ringtonesDescHi
+                      : AppStrings.ringtonesDesc,
                   gradient: AppColors.sectionGradients[1],
                   onTap: () => _push(context, const RingtonesScreen()),
                 ),
                 _FeatureCard(
                   icon: Icons.auto_awesome_rounded,
-                  label: isHindi ? AppStrings.horoscopeTitleHi : AppStrings.horoscopeTitle,
-                  subtitle: isHindi ? AppStrings.horoscopeDescHi : AppStrings.horoscopeDesc,
+                  label: isHindi
+                      ? AppStrings.horoscopeTitleHi
+                      : AppStrings.horoscopeTitle,
+                  subtitle: isHindi
+                      ? AppStrings.horoscopeDescHi
+                      : AppStrings.horoscopeDesc,
                   gradient: AppColors.sectionGradients[2],
                   onTap: () => _push(context, const HoroscopeScreen()),
                 ),
                 _FeatureCard(
                   icon: Icons.calendar_today_rounded,
                   label: isHindi ? 'पंचांग' : 'Panchang',
-                  subtitle: isHindi ? 'आज का पंचांग' : "Today's Panchang",
+                  subtitle:
+                      isHindi ? 'आज का पंचांग देखें' : 'View today\'s Panchang',
                   gradient: const [Color(0xFF6D4C41), Color(0xFFA1887F)],
                   onTap: () => _push(
                     context,
@@ -126,16 +214,19 @@ class HomeScreen extends ConsumerWidget {
   }
 
   void _push(BuildContext context, Widget screen) {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (_) => screen));
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
   }
 }
 
-// ─── Home Header (parallax) ───────────────────────────────────────────────────
+// ─── Home Header ──────────────────────────────────────────────────────────────
 class _HomeHeader extends StatelessWidget {
   final bool isHindi;
   final String greeting;
-  const _HomeHeader({required this.isHindi, required this.greeting});
+  final String greetingEmoji;
+  const _HomeHeader(
+      {required this.isHindi,
+      required this.greeting,
+      required this.greetingEmoji});
 
   @override
   Widget build(BuildContext context) {
@@ -151,8 +242,8 @@ class _HomeHeader extends StatelessWidget {
               children: [
                 // Om circle
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white.withValues(alpha: 0.18),
@@ -163,7 +254,7 @@ class _HomeHeader extends StatelessWidget {
                   child: const Center(
                     child: Text('ॐ',
                         style: TextStyle(
-                            fontSize: 22,
+                            fontSize: 24,
                             color: AppColors.gold,
                             fontWeight: FontWeight.w700)),
                   ),
@@ -176,24 +267,41 @@ class _HomeHeader extends StatelessWidget {
                       isHindi ? AppStrings.appNameHi : AppStrings.appName,
                       style: AppTextStyles.appName,
                     ),
-                    Text(greeting, style: AppTextStyles.greeting),
+                    Row(
+                      children: [
+                        Text(greetingEmoji,
+                            style: const TextStyle(fontSize: 13)),
+                        const SizedBox(width: 4),
+                        Text(greeting, style: AppTextStyles.greeting),
+                      ],
+                    ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
             // Quick stat pills
-            Row(
-              children: [
-                _StatPill(icon: Icons.headphones_rounded,
-                    label: isHindi ? '50+ भजन' : '50+ Bhajans'),
-                const SizedBox(width: 8),
-                _StatPill(icon: Icons.wallpaper_rounded,
-                    label: isHindi ? '100+ वॉलपेपर' : '100+ Wallpapers'),
-                const SizedBox(width: 8),
-                _StatPill(icon: Icons.menu_book_rounded,
-                    label: isHindi ? '20+ ग्रंथ' : '20+ Books'),
-              ],
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _StatPill(
+                      icon: Icons.headphones_rounded,
+                      label: isHindi ? '50+ भजन' : '50+ Bhajans'),
+                  const SizedBox(width: 8),
+                  _StatPill(
+                      icon: Icons.wallpaper_rounded,
+                      label: isHindi ? '100+ वॉलपेपर' : '100+ Wallpapers'),
+                  const SizedBox(width: 8),
+                  _StatPill(
+                      icon: Icons.menu_book_rounded,
+                      label: isHindi ? '20+ ग्रंथ' : '20+ Books'),
+                  const SizedBox(width: 8),
+                  _StatPill(
+                      icon: Icons.auto_awesome_rounded,
+                      label: isHindi ? 'राशिफल' : 'Horoscope'),
+                ],
+              ),
             ),
           ],
         ),
@@ -214,8 +322,8 @@ class _StatPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-            color: Colors.white.withValues(alpha: 0.3), width: 1),
+        border:
+            Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -233,73 +341,244 @@ class _StatPill extends StatelessWidget {
   }
 }
 
-// ─── Namaste Hero Card ────────────────────────────────────────────────────────
-class _NamasteCard extends StatelessWidget {
+// ─── Daily Greeting Card ──────────────────────────────────────────────────────
+class _GreetingCard extends StatefulWidget {
   final bool isHindi;
-  const _NamasteCard({required this.isHindi});
+  final (String, String, String) shloka;
+  const _GreetingCard({required this.isHindi, required this.shloka});
+
+  @override
+  State<_GreetingCard> createState() => _GreetingCardState();
+}
+
+class _GreetingCardState extends State<_GreetingCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _shimmerCtrl;
+  late Animation<double> _shimmerAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _shimmerCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
+    _shimmerAnim = Tween<double>(begin: -1.5, end: 1.5).animate(
+      CurvedAnimation(parent: _shimmerCtrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _shimmerCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFFF6B00), Color(0xFFFFAB40)],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+    final now = DateTime.now();
+    final weekdays = [
+      'Monday', 'Tuesday', 'Wednesday',
+      'Thursday', 'Friday', 'Saturday', 'Sunday',
+    ];
+    final weekdaysHi = [
+      'सोमवार', 'मंगलवार', 'बुधवार',
+      'गुरुवार', 'शुक्रवार', 'शनिवार', 'रविवार',
+    ];
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final dayName = widget.isHindi
+        ? weekdaysHi[now.weekday - 1]
+        : weekdays[now.weekday - 1];
+
+    return AnimatedBuilder(
+      animation: _shimmerAnim,
+      builder: (context, child) {
+        return Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFFF6B00), Color(0xFFFF9A3C), Color(0xFFFFBF00)],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.4),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
+          child: child,
+        );
+      },
+      child: Stack(
         children: [
-          // Left: text
-          Expanded(
+          // Decorative circle top right
+          Positioned(
+            right: -30,
+            top: -30,
+            child: Container(
+              width: 130,
+              height: 130,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
+            ),
+          ),
+          // Decorative circle bottom left
+          Positioned(
+            left: -20,
+            bottom: -20,
+            child: Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.06),
+              ),
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(22),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  isHindi ? 'नमस्ते 🙏' : 'Namaste 🙏',
-                  style: AppTextStyles.appName.copyWith(
-                    fontSize: 28,
-                    color: Colors.white,
-                    letterSpacing: 1.0,
+                // ── Top row: date + om ──────────────────────────────
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Date block
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          dayName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          '${now.day} ${months[now.month - 1]}, ${now.year}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    // Om emblem
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.2),
+                        border: Border.all(
+                            color: AppColors.gold.withValues(alpha: 0.6),
+                            width: 1.5),
+                      ),
+                      child: const Center(
+                        child: Text('ॐ',
+                            style: TextStyle(
+                                fontSize: 26,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // ── Divider ─────────────────────────────────────────
+                Container(
+                  height: 1,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.white.withValues(alpha: 0.0),
+                        Colors.white.withValues(alpha: 0.3),
+                        Colors.white.withValues(alpha: 0.0),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 6),
+
+                const SizedBox(height: 16),
+
+                // ── Sanskrit shloka ─────────────────────────────────
                 Text(
-                  isHindi
-                      ? AppStrings.taglineHi
-                      : AppStrings.tagline,
-                  style: AppTextStyles.tagline.copyWith(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    fontSize: 12,
+                  widget.shloka.$1,
+                  style: const TextStyle(
+                    color: AppColors.gold,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    fontStyle: FontStyle.italic,
+                    height: 1.4,
                   ),
+                ),
+
+                const SizedBox(height: 10),
+
+                // ── Meaning ─────────────────────────────────────────
+                Text(
+                  widget.isHindi ? widget.shloka.$3 : widget.shloka.$2,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    height: 1.6,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // ── Bottom: label ───────────────────────────────────
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.auto_awesome_rounded,
+                              size: 11, color: AppColors.gold),
+                          const SizedBox(width: 5),
+                          Text(
+                            widget.isHindi
+                                ? 'आज का श्लोक'
+                                : 'Shloka of the Day',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    const Text('🙏', style: TextStyle(fontSize: 20)),
+                  ],
                 ),
               ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Right: praying hands
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.2),
-              border: Border.all(
-                  color: AppColors.gold.withValues(alpha: 0.5), width: 2),
-            ),
-            child: const Center(
-              child: Text('🙏',
-                  style: TextStyle(fontSize: 36)),
             ),
           ),
         ],
@@ -410,14 +689,14 @@ class _FeatureCardState extends State<_FeatureCard>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // Icon container
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.22),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child:
-                          Icon(widget.icon, color: Colors.white, size: 22),
+                      child: Icon(widget.icon, color: Colors.white, size: 22),
                     ),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
