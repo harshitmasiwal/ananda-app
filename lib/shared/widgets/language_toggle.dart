@@ -4,7 +4,9 @@ import '../../core/constants/app_colors.dart';
 import '../../core/providers/language_provider.dart';
 
 class LanguageToggle extends ConsumerWidget {
-  const LanguageToggle({super.key});
+  /// If true, the toggle is displayed on a dark background (white text/border)
+  final bool lightMode;
+  const LanguageToggle({super.key, this.lightMode = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -20,11 +22,17 @@ class LanguageToggle extends ConsumerWidget {
           borderRadius: BorderRadius.circular(20),
           gradient: isHindi
               ? AppColors.goldGradient
-              : const LinearGradient(
-                  colors: [Colors.white24, Colors.white30],
-                ),
+              : (lightMode
+                  ? const LinearGradient(
+                      colors: [Colors.white24, Colors.white30],
+                    )
+                  : const LinearGradient(
+                      colors: [Color(0xFFF5EDE2), Color(0xFFEDD9C5)],
+                    )),
           border: Border.all(
-            color: isHindi ? AppColors.goldDark : Colors.white54,
+            color: isHindi
+                ? AppColors.goldDark
+                : (lightMode ? Colors.white54 : AppColors.border),
             width: 1.5,
           ),
         ),
@@ -35,25 +43,27 @@ class LanguageToggle extends ConsumerWidget {
               'EN',
               style: TextStyle(
                 fontSize: 12,
-                fontWeight:
-                    !isHindi ? FontWeight.w700 : FontWeight.w400,
-                color: !isHindi ? AppColors.primary : Colors.white70,
+                fontWeight: !isHindi ? FontWeight.w700 : FontWeight.w400,
+                color: !isHindi
+                    ? (lightMode ? Colors.white : AppColors.primary)
+                    : (lightMode ? Colors.white70 : AppColors.textSecondary),
               ),
             ),
             const SizedBox(width: 6),
             Container(
               width: 1,
               height: 12,
-              color: Colors.white54,
+              color: lightMode ? Colors.white54 : AppColors.border,
             ),
             const SizedBox(width: 6),
             Text(
               'हि',
               style: TextStyle(
                 fontSize: 12,
-                fontWeight:
-                    isHindi ? FontWeight.w700 : FontWeight.w400,
-                color: isHindi ? AppColors.primary : Colors.white70,
+                fontWeight: isHindi ? FontWeight.w700 : FontWeight.w400,
+                color: isHindi
+                    ? (lightMode ? Colors.white : AppColors.primary)
+                    : (lightMode ? Colors.white70 : AppColors.textSecondary),
               ),
             ),
           ],

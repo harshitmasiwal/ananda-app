@@ -3,17 +3,18 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_text_styles.dart';
 import '../../core/providers/language_provider.dart';
 import '../../core/services/connectivity_service.dart';
 import '../../shared/widgets/language_toggle.dart';
 import '../../shared/widgets/no_internet_banner.dart';
 import '../../shared/widgets/no_internet_card.dart';
-import '../../shared/widgets/animated_devotional_background.dart';
 import '../../shared/widgets/bouncing_tap.dart';
+
+
 
 // ─── API Config ────────────────────────────────────────────────────────────────
 const _apiNinjasKey = 'HcRCPmdAe9ukZfXgkFz7FZHcbtLDwLkXgQm6rRzB';
@@ -444,6 +445,9 @@ class _HoroscopeScreenState extends ConsumerState<HoroscopeScreen>
       vsync: this,
       initialIndex: widget.showPanchangFirst ? 0 : 1,
     );
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
     _panchangData = PanchangCalculator.calculate(DateTime.now());
     _loadHoroscope(_selectedSign);
   }
@@ -473,120 +477,243 @@ class _HoroscopeScreenState extends ConsumerState<HoroscopeScreen>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
       ),
       child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: AnimatedDevotionalBackground(
-          mode: DevotionalMode.horoscope,
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          bottom: false,
           child: Stack(
             children: [
-            Column(
-            children: [
-          // ── Header ──────────────────────────────────────────────────────
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF1A237E), Color(0xFF3949AB), Color(0xFF5C6BC0)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(28),
-                bottomRight: Radius.circular(28),
-              ),
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Column(
+              Column(
                 children: [
+                  // ── Top Header Bar ─────────────────────────────────────────
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 16, 0),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                     child: Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(12),
+                        if (Navigator.of(context).canPop()) ...[
+                          BouncingTap(
+                            onTap: () => Navigator.of(context).pop(),
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFFEDE4D8),
+                                  width: 1.0,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.03),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.arrow_back_ios_new_rounded,
+                                  size: 16,
+                                  color: Color(0xFF2E170C),
+                                ),
+                              ),
+                            ),
                           ),
-                          child: const Text('🔮',
-                              style: TextStyle(fontSize: 20)),
+                          const SizedBox(width: 12),
+                        ],
+
+                        // Title & Subtitle
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isHindi ? 'ज्योतिष और पंचांग' : 'Astro & Panchang',
+                                style: GoogleFonts.playfairDisplay(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF2E170C),
+                                ),
+                              ),
+                              Text(
+                                isHindi
+                                    ? 'दैनिक वैदिक मुहूर्त व राशिफल'
+                                    : 'Daily Vedic Muhurta & Horoscope',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  color: const Color(0xFF7B6B61),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(width: 12),
-                        Text(
-                          isHindi ? 'ज्योतिष और पंचांग' : 'Astro & Panchang',
-                          style: AppTextStyles.appName
-                              .copyWith(fontSize: 20, letterSpacing: 0.5),
-                        ),
-                        const Spacer(),
-                        LanguageToggle(),
+
+                        const LanguageToggle(lightMode: true),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  TabBar(
-                    controller: _tabController,
-                    indicatorColor: AppColors.gold,
-                    indicatorWeight: 3,
-                    indicatorSize: TabBarIndicatorSize.label,
-                    labelColor: Colors.white,
-                    unselectedLabelColor:
-                        Colors.white.withValues(alpha: 0.55),
-                    labelStyle: AppTextStyles.h3
-                        .copyWith(color: Colors.white, fontSize: 14),
-                    tabs: [
-                      Tab(text: isHindi ? 'पंचांग' : 'Panchang'),
-                      Tab(text: isHindi ? 'राशिफल' : 'Horoscope'),
-                    ],
+
+                  // ── Pill Tab Switcher (Panchang / Horoscope) ──────────────
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1E9DF),
+                      borderRadius: BorderRadius.circular(26),
+                      border: Border.all(
+                        color: const Color(0xFFEDE4D8),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        // 1. Panchang Tab Pill
+                        Expanded(
+                          child: BouncingTap(
+                            onTap: () => _tabController.animateTo(0),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: _tabController.index == 0
+                                    ? const Color(0xFF943E00)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(22),
+                                boxShadow: _tabController.index == 0
+                                    ? [
+                                        BoxShadow(
+                                          color: const Color(0xFF943E00).withValues(alpha: 0.25),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.calendar_month_rounded,
+                                    size: 16,
+                                    color: _tabController.index == 0
+                                        ? Colors.white
+                                        : const Color(0xFF7B6B61),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    isHindi ? 'पंचांग' : 'Panchang',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: _tabController.index == 0
+                                          ? Colors.white
+                                          : const Color(0xFF7B6B61),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // 2. Horoscope Tab Pill
+                        Expanded(
+                          child: BouncingTap(
+                            onTap: () => _tabController.animateTo(1),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: _tabController.index == 1
+                                    ? const Color(0xFF943E00)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(22),
+                                boxShadow: _tabController.index == 1
+                                    ? [
+                                        BoxShadow(
+                                          color: const Color(0xFF943E00).withValues(alpha: 0.25),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.auto_awesome_rounded,
+                                    size: 16,
+                                    color: _tabController.index == 1
+                                        ? Colors.white
+                                        : const Color(0xFF7B6B61),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    isHindi ? 'राशिफल' : 'Horoscope',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: _tabController.index == 1
+                                          ? Colors.white
+                                          : const Color(0xFF7B6B61),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // ── Tab Views ─────────────────────────────────────────────
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _PanchangTab(isHindi: isHindi, data: _panchangData),
+                        _HoroscopeTab(
+                          isHindi: isHindi,
+                          signData: _signData,
+                          selectedSign: _selectedSign,
+                          horoscopeResult: _horoscopeResult,
+                          isLoading: _loadingHoroscope,
+                          onSignChanged: (s) {
+                            setState(() => _selectedSign = s);
+                            _loadHoroscope(s);
+                          },
+                          onRetry: () => _loadHoroscope(_selectedSign),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-            ),
-          ),
 
-              // ── Tab views ───────────────────────────────────────────────────
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _PanchangTab(isHindi: isHindi, data: _panchangData),
-                    _HoroscopeTab(
-                      isHindi: isHindi,
-                      signData: _signData,
-                      selectedSign: _selectedSign,
-                      horoscopeResult: _horoscopeResult,
-                      isLoading: _loadingHoroscope,
-                      onSignChanged: (s) {
-                        setState(() => _selectedSign = s);
-                        _loadHoroscope(s);
-                      },
-                      onRetry: () => _loadHoroscope(_selectedSign),
-                    ),
-                  ],
+              const Positioned(
+                left: 0,
+                right: 0,
+                bottom: 4,
+                child: SafeArea(
+                  top: false,
+                  child: NoInternetBottomCard(),
                 ),
               ),
             ],
           ),
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 4,
-            child: SafeArea(
-              top: false,
-              child: NoInternetBottomCard(),
-            ),
-          ),
-        ],
+        ),
       ),
-      ),
-    ),
     );
   }
 }
 
-// ─── Panchang Tab ─────────────────────────────────────────────────────────────
+// ─── Panchang Tab (Anand Ivory / Terracotta Theme) ───────────────────────────
 class _PanchangTab extends StatelessWidget {
   final bool isHindi;
   final PanchangData data;
@@ -601,99 +728,115 @@ class _PanchangTab extends StatelessWidget {
     ];
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       physics: const BouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Date Hero Card ────────────────────────────────────────────
+          // ── Clean Date Hero Card ──────────────────────────────────────
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(22),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1A237E), Color(0xFF3949AB)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: const Color(0xFFEDE4D8),
+                width: 1.0,
               ),
-              borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF1A237E).withValues(alpha: 0.4),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Left: gregorian date
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${now.day}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 64,
-                        fontWeight: FontWeight.w800,
-                        height: 1.0,
-                      ),
-                    ),
-                    Text(
-                      '${months[now.month - 1]} ${now.year}',
-                      style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: AppColors.gold.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: AppColors.gold.withValues(alpha: 0.5)),
-                      ),
-                      child: Text(
-                        isHindi ? data.varaHi : data.vara,
-                        style: const TextStyle(
-                          color: AppColors.gold,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
+                // Left: Gregorian date
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${now.day}',
+                        style: GoogleFonts.playfairDisplay(
+                          color: const Color(0xFF2E170C),
+                          fontSize: 54,
+                          fontWeight: FontWeight.w800,
+                          height: 1.0,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 3),
+                      Text(
+                        '${months[now.month - 1]} ${now.year}',
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFF7B6B61),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFBECE1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          isHindi ? data.varaHi : data.vara,
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFF8C3B00),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const Spacer(),
-                // Right: Hindu date
+
+                // Right: Hindu Date & Sun Icon
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text('☀️', style: TextStyle(fontSize: 40)),
-                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFF3E0),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.wb_sunny_rounded,
+                        color: Color(0xFFE65100),
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     Text(
                       data.vikramSamvat,
-                      style: const TextStyle(
-                        color: AppColors.gold,
-                        fontSize: 14,
+                      style: GoogleFonts.playfairDisplay(
+                        color: const Color(0xFF8C3B00),
+                        fontSize: 15,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       isHindi ? data.hindiMonth : 'Hindu Month',
-                      style: const TextStyle(
-                          color: Colors.white70, fontSize: 12),
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFF7B6B61),
+                        fontSize: 11,
+                      ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       isHindi ? data.pakshaHi : data.paksha,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFF2E170C),
+                        fontSize: 12.5,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -703,112 +846,154 @@ class _PanchangTab extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          // ── Sunrise / Sunset ──────────────────────────────────────────
+          // ── Sunrise & Sunset Cards ────────────────────────────────────
           Row(
             children: [
               Expanded(
                 child: _SunCard(
-                  icon: '🌅',
+                  isSunrise: true,
                   label: isHindi ? 'सूर्योदय' : 'Sunrise',
                   time: data.sunriseApprox,
-                  color: const Color(0xFFFF8F00),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _SunCard(
-                  icon: '🌇',
+                  isSunrise: false,
                   label: isHindi ? 'सूर्यास्त' : 'Sunset',
                   time: data.sunsetApprox,
-                  color: const Color(0xFF6A1B9A),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
 
-          Text(
-            isHindi ? 'पंचांग विवरण' : 'Panchang Details',
-            style: AppTextStyles.sectionHeader,
+          // ── Panchang Details Header ───────────────────────────────────
+          Row(
+            children: [
+              Text(
+                isHindi ? 'पंचांग विवरण' : 'Panchang Details',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF2E170C),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(height: 1, width: 20, color: const Color(0xFFEDE4D8)),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: Text('🪷', style: TextStyle(fontSize: 13)),
+              ),
+              Expanded(child: Container(height: 1, color: const Color(0xFFEDE4D8))),
+            ],
           ),
           const SizedBox(height: 12),
 
+          // ── Panchang Detail Cards ─────────────────────────────────────
           _PanchangRow(
-            icon: Icons.brightness_2_rounded,
+            icon: Icons.nightlight_round,
             label: isHindi ? 'तिथि' : 'Tithi',
             value: isHindi ? data.tithiHi : data.tithi,
-            color: const Color(0xFF1565C0),
+            iconColor: const Color(0xFF3F51B5),
+            iconBgColor: const Color(0xFFE8EAF6),
           ),
           _PanchangRow(
             icon: Icons.star_rounded,
             label: isHindi ? 'नक्षत्र' : 'Nakshatra',
             value: isHindi ? data.nakshatraHi : data.nakshatra,
-            color: const Color(0xFF6A1B9A),
+            iconColor: const Color(0xFF7E57C2),
+            iconBgColor: const Color(0xFFEDE7F6),
           ),
           _PanchangRow(
-            icon: Icons.auto_fix_high_rounded,
+            icon: Icons.spa_rounded,
             label: isHindi ? 'योग' : 'Yoga',
             value: isHindi ? data.yogaHi : data.yoga,
-            color: const Color(0xFF00695C),
+            iconColor: const Color(0xFF00897B),
+            iconBgColor: const Color(0xFFE0F2F1),
           ),
           _PanchangRow(
-            icon: Icons.circle_outlined,
+            icon: Icons.donut_large_rounded,
             label: isHindi ? 'करण' : 'Karan',
             value: isHindi ? data.karanHi : data.karan,
-            color: const Color(0xFFAD1457),
+            iconColor: const Color(0xFFD81B60),
+            iconBgColor: const Color(0xFFFCE4EC),
           ),
           _PanchangRow(
-            icon: Icons.calendar_today_rounded,
+            icon: Icons.calendar_month_rounded,
             label: isHindi ? 'वार' : 'Vara',
             value: isHindi ? data.varaHi : data.vara,
-            color: const Color(0xFFE65100),
+            iconColor: const Color(0xFFF57C00),
+            iconBgColor: const Color(0xFFFFF3E0),
           ),
           _PanchangRow(
-            icon: Icons.do_not_disturb_on_rounded,
+            icon: Icons.warning_amber_rounded,
             label: isHindi ? 'राहु काल' : 'Rahu Kaal',
             value: data.rahuKaal,
-            color: const Color(0xFF37474F),
+            iconColor: const Color(0xFFBA1A1A),
+            iconBgColor: const Color(0xFFFDEEE9),
             isBad: true,
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
 
-          // ── Daily Shloka ──────────────────────────────────────────────
+          // ── Daily Shloka / Vedic Thought ──────────────────────────────
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFFF8E1), Color(0xFFFFFDE7)],
+              color: const Color(0xFFFFF9F3),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: const Color(0xFFEBDBCB),
+                width: 1.0,
               ),
-              borderRadius: BorderRadius.circular(18),
-              border:
-                  Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('🕉️', style: TextStyle(fontSize: 28)),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFBECE1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Text('🕉️', style: TextStyle(fontSize: 20)),
+                  ),
+                ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isHindi ? 'आज का संदेश' : 'Today\'s Message',
-                        style: AppTextStyles.h3.copyWith(
-                            fontSize: 13, color: AppColors.goldDark),
+                        isHindi ? 'आज का वैदिक विचार' : 'Today\'s Vedic Thought',
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF8C3B00),
+                        ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Text(
                         isHindi
                             ? 'सत्यं शिवं सुन्दरम् — सत्य, शिव और सौंदर्य की साधना करें।'
-                            : 'Satyam Shivam Sundaram — Seek truth, auspiciousness & beauty in every moment.',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: const Color(0xFF5D4037),
-                          height: 1.6,
+                            : 'Satyam Shivam Sundaram — Seek truth, auspiciousness & divine grace in every conscious breath.',
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFF5D483D),
+                          fontSize: 12.5,
+                          height: 1.5,
                           fontStyle: FontStyle.italic,
                         ),
                       ),
@@ -819,7 +1004,7 @@ class _PanchangTab extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 40),
         ],
       ),
     );
@@ -827,43 +1012,73 @@ class _PanchangTab extends StatelessWidget {
 }
 
 class _SunCard extends StatelessWidget {
-  final String icon;
+  final bool isSunrise;
   final String label;
   final String time;
-  final Color color;
-  const _SunCard(
-      {required this.icon,
-      required this.label,
-      required this.time,
-      required this.color});
+
+  const _SunCard({
+    required this.isSunrise,
+    required this.label,
+    required this.time,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xFFEDE4D8),
+          width: 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Text(icon, style: const TextStyle(fontSize: 26)),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isSunrise ? const Color(0xFFFBECE1) : const Color(0xFFEDE7F6),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isSunrise ? Icons.wb_twilight_rounded : Icons.bedtime_rounded,
+              color: isSunrise ? const Color(0xFF8C3B00) : const Color(0xFF5E35B1),
+              size: 22,
+            ),
+          ),
           const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label,
-                  style: TextStyle(
-                      color: color,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600)),
-              Text(time,
-                  style: TextStyle(
-                      color: color,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700)),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF7B6B61),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  time,
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF2E170C),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -875,13 +1090,16 @@ class _PanchangRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  final Color color;
+  final Color iconColor;
+  final Color iconBgColor;
   final bool isBad;
+
   const _PanchangRow({
     required this.icon,
     required this.label,
     required this.value,
-    required this.color,
+    required this.iconColor,
+    required this.iconBgColor,
     this.isBad = false,
   });
 
@@ -889,19 +1107,18 @@ class _PanchangRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isBad
-              ? Colors.red.withValues(alpha: 0.2)
-              : AppColors.divider,
+          color: isBad ? const Color(0xFFF7D2CA) : const Color(0xFFEDE4D8),
+          width: 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.06),
-            blurRadius: 8,
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
@@ -912,26 +1129,46 @@ class _PanchangRow extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+              color: iconBgColor,
+              shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 18),
+            child: Icon(icon, color: iconColor, size: 20),
           ),
-          const SizedBox(width: 14),
-          Text(label,
-              style: AppTextStyles.body
-                  .copyWith(color: AppColors.textSecondary, fontSize: 13)),
+          const SizedBox(width: 12),
+          Text(
+            label,
+            style: GoogleFonts.outfit(
+              color: const Color(0xFF7B6B61),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           const Spacer(),
-          Text(value,
-              style: AppTextStyles.h3.copyWith(
-                  fontSize: 13,
-                  color: isBad
-                      ? Colors.red.shade700
-                      : AppColors.textPrimary)),
+          Text(
+            value,
+            style: GoogleFonts.outfit(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+              color: isBad ? const Color(0xFFBA1A1A) : const Color(0xFF2E170C),
+            ),
+          ),
           if (isBad) ...[
             const SizedBox(width: 6),
-            Icon(Icons.warning_amber_rounded,
-                color: Colors.red.shade400, size: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFDEEE9),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                'Avoid',
+                style: GoogleFonts.outfit(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFFBA1A1A),
+                ),
+              ),
+            ),
           ],
         ],
       ),
@@ -939,7 +1176,7 @@ class _PanchangRow extends StatelessWidget {
   }
 }
 
-// ─── Horoscope Tab ────────────────────────────────────────────────────────────
+// ─── Horoscope Tab (Anand Ivory / Terracotta Theme) ──────────────────────────
 class _HoroscopeTab extends StatelessWidget {
   final bool isHindi;
   final List<(String, String, String, String, String)> signData;
@@ -966,27 +1203,42 @@ class _HoroscopeTab extends StatelessWidget {
         orElse: () => signData[0]);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       physics: const BouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            isHindi ? 'अपनी राशि चुनें' : 'Choose Your Zodiac Sign',
-            style: AppTextStyles.sectionHeader,
+          // ── Section Header ──────────────────────────────────────────
+          Row(
+            children: [
+              Text(
+                isHindi ? 'अपनी राशि चुनें' : 'Choose Your Zodiac Sign',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF2E170C),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(height: 1, width: 20, color: const Color(0xFFEDE4D8)),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: Text('🪷', style: TextStyle(fontSize: 13)),
+              ),
+              Expanded(child: Container(height: 1, color: const Color(0xFFEDE4D8))),
+            ],
           ),
           const SizedBox(height: 12),
 
-          // ── Zodiac Grid ─────────────────────────────────────────────
+          // ── 4x3 Zodiac Grid ─────────────────────────────────────────
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate:
-                const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 4,
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
-              childAspectRatio: 0.9,
+              childAspectRatio: 0.95,
             ),
             itemCount: signData.length,
             itemBuilder: (_, i) {
@@ -994,50 +1246,47 @@ class _HoroscopeTab extends StatelessWidget {
               final isActive = sign.$1 == selectedSign;
               return BouncingTap(
                 onTap: () => onSignChanged(sign.$1),
-                scaleFactor: 0.93,
+                scaleFactor: 0.94,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(
-                    gradient: isActive
-                        ? const LinearGradient(
-                            colors: [Color(0xFF1A237E), Color(0xFF5C6BC0)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )
-                        : null,
-                    color: isActive ? null : AppColors.cardBg,
-                    borderRadius: BorderRadius.circular(14),
+                    color: isActive ? const Color(0xFF943E00) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isActive
-                          ? const Color(0xFF1A237E)
-                          : AppColors.divider,
-                      width: 1.5,
+                          ? const Color(0xFF943E00)
+                          : const Color(0xFFEDE4D8),
+                      width: isActive ? 1.5 : 1.0,
                     ),
-                    boxShadow: isActive
-                        ? [
-                            BoxShadow(
-                              color: const Color(0xFF1A237E)
-                                  .withValues(alpha: 0.35),
-                              blurRadius: 8,
-                            ),
-                          ]
-                        : null,
+                    boxShadow: [
+                      BoxShadow(
+                        color: isActive
+                            ? const Color(0xFF943E00).withValues(alpha: 0.25)
+                            : Colors.black.withValues(alpha: 0.02),
+                        blurRadius: isActive ? 8 : 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(sign.$2,
-                          style: TextStyle(
-                              fontSize: isActive ? 26 : 22)),
-                      const SizedBox(height: 2),
+                      _ZodiacGlyph(
+                        signId: sign.$1,
+                        glyph: sign.$2,
+                        isActive: isActive,
+                      ),
+                      const SizedBox(height: 4),
                       Text(
-                        isHindi ? sign.$4 : sign.$3,
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
+                        (isHindi ? sign.$4 : sign.$3).toUpperCase(),
+                        style: GoogleFonts.outfit(
+                          fontSize: 9.5,
+                          fontWeight:
+                              isActive ? FontWeight.w700 : FontWeight.w600,
                           color: isActive
                               ? Colors.white
-                              : AppColors.textSecondary,
+                              : const Color(0xFF3C2C24),
+                          letterSpacing: 0.3,
                         ),
                         textAlign: TextAlign.center,
                         maxLines: 1,
@@ -1050,27 +1299,17 @@ class _HoroscopeTab extends StatelessWidget {
             },
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 18),
 
           // ── Horoscope Result Card ───────────────────────────────────
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 400),
-            transitionBuilder: (child, anim) => FadeTransition(
-              opacity: anim,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.05),
-                  end: Offset.zero,
-                ).animate(anim),
-                child: child,
-              ),
-            ),
+            duration: const Duration(milliseconds: 300),
             child: isLoading
                 ? _loadingCard(isHindi)
                 : _resultCard(selected, horoscopeResult, isHindi),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 40),
         ],
       ),
     );
@@ -1082,31 +1321,33 @@ class _HoroscopeTab extends StatelessWidget {
       width: double.infinity,
       height: 180,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A237E), Color(0xFF5C6BC0)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: const Color(0xFFEDE4D8),
+          width: 1.0,
         ),
-        borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const SizedBox(
-            width: 32,
-            height: 32,
+            width: 28,
+            height: 28,
             child: CircularProgressIndicator(
-              color: AppColors.gold,
+              color: Color(0xFF8C3B00),
               strokeWidth: 2.5,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Text(
             isHindi
                 ? 'राशिफल लोड हो रहा है...'
-                : 'Fetching your horoscope...',
-            style:
-                const TextStyle(color: Colors.white70, fontSize: 14),
+                : 'Reading planetary alignments...',
+            style: GoogleFonts.outfit(
+              color: const Color(0xFF7B6B61),
+              fontSize: 13,
+            ),
           ),
         ],
       ),
@@ -1118,34 +1359,27 @@ class _HoroscopeTab extends StatelessWidget {
     HoroscopeResult? result,
     bool isHindi,
   ) {
-    // If not fetched today and device is offline, show dedicated No Internet state
     if (result?.isOfflineNotFetched == true) {
       return Container(
         key: ValueKey('offline_${selected.$1}'),
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(24),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: const Color(0xFFFF6B00).withValues(alpha: 0.25),
+            color: const Color(0xFFEDE4D8),
+            width: 1.0,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         child: Column(
           children: [
             NoInternetCard(
               isHindi: isHindi,
               customMessage:
-                  'Today\'s horoscope for ${selected.$3} has not been fetched yet. Please connect to the internet to load today\'s predictions.',
+                  'Today\'s horoscope for ${selected.$3} has not been fetched yet. Please connect to internet to load today\'s predictions.',
               customMessageHi:
-                  '${selected.$4} राशि का आज का राशिफल अभी लोड नहीं हुआ है। कृपया आज की भविष्यवाणियां देखने के लिए इंटरनेट से कनेक्ट करें।',
+                  '${selected.$4} राशि का आज का राशिफल अभी लोड नहीं हुआ है। कृपया इंटरनेट से कनेक्ट करें।',
               onRetry: () async => onRetry(),
             ),
           ],
@@ -1164,124 +1398,233 @@ class _HoroscopeTab extends StatelessWidget {
     return Container(
       key: ValueKey(selected.$1),
       width: double.infinity,
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A237E), Color(0xFF3949AB), Color(0xFF5C6BC0)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: const Color(0xFFEDE4D8),
+          width: 1.0,
         ),
-        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1A237E).withValues(alpha: 0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Sign header ───────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-            child: Row(
-              children: [
-                Text(selected.$2,
-                    style: const TextStyle(fontSize: 42)),
-                const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isHindi ? selected.$4 : selected.$3,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                      ),
+          // ── Sign Header Row ─────────────────────────────────────────
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFFFBECE1),
+                ),
+                child: Center(
+                  child: Text(
+                    selected.$2,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      color: Color(0xFF8C3B00),
+                      fontWeight: FontWeight.bold,
                     ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isHindi ? selected.$4 : selected.$3,
+                    style: GoogleFonts.playfairDisplay(
+                      color: const Color(0xFF2E170C),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    selected.$5,
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF7B6B61),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFBECE1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.check_circle_rounded, size: 13, color: Color(0xFF8C3B00)),
+                    const SizedBox(width: 4),
                     Text(
-                      selected.$5,
-                      style: const TextStyle(
-                          color: Colors.white60, fontSize: 12),
+                      isHindi ? 'आज' : 'Today',
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFF8C3B00),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
-                const Spacer(),
-                if (result?.date.isNotEmpty == true)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      result!.date,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ),
-              ],
-            ),
+              ),
+            ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          // ── Horoscope text ────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(16),
+          // ── Inner Prediction Box ────────────────────────────────────
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFAF7F2),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFEDE4D8),
+                width: 1.0,
               ),
-              child: Text(
-                horoscopeText,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  height: 1.7,
-                ),
+            ),
+            child: Text(
+              horoscopeText,
+              style: GoogleFonts.outfit(
+                color: const Color(0xFF2E170C),
+                fontSize: 13.5,
+                height: 1.6,
               ),
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          // ── Source / Cache badge ──────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            child: Row(
-              children: [
-                Icon(
-                  result?.isFromCache == true
-                      ? Icons.offline_pin_rounded
-                      : Icons.verified_rounded,
-                  color: AppColors.gold,
-                  size: 15,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  result?.isFromCache == true
-                      ? (isHindi
-                          ? 'आज का कैश्ड राशिफल'
-                          : 'Cached for today')
-                      : (isHindi
-                          ? 'API Ninjas से लाइव डेटा'
-                          : 'Live data via API-Ninjas'),
-                  style: const TextStyle(
-                      color: Colors.white70, fontSize: 11),
-                ),
-              ],
-            ),
+          // ── Auspicious Guidance Footer ──────────────────────────────
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(height: 1, width: 30, color: const Color(0xFFEDE4D8)),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 6),
+                child: Text('🪷', style: TextStyle(fontSize: 13)),
+              ),
+              Container(height: 1, width: 30, color: const Color(0xFFEDE4D8)),
+            ],
           ),
         ],
       ),
     );
   }
 }
+
+// ─── Zodiac Glyph Widget ──────────────────────────────────────────────────────
+class _ZodiacGlyph extends StatelessWidget {
+  final String signId;
+  final String glyph;
+  final bool isActive;
+
+  const _ZodiacGlyph({
+    required this.signId,
+    required this.glyph,
+    required this.isActive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isActive) {
+      return Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withValues(alpha: 0.18),
+        ),
+        child: Center(
+          child: Text(
+            glyph,
+            style: const TextStyle(
+              fontSize: 22,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      );
+    }
+
+    Color signColor;
+    switch (signId) {
+      case 'aries':
+        signColor = const Color(0xFFC62828);
+        break;
+      case 'taurus':
+        signColor = const Color(0xFFD48B17);
+        break;
+      case 'gemini':
+        signColor = const Color(0xFFE67E22);
+        break;
+      case 'cancer':
+        signColor = const Color(0xFF00897B);
+        break;
+      case 'leo':
+        signColor = const Color(0xFFE65100);
+        break;
+      case 'virgo':
+        signColor = const Color(0xFF2E7D32);
+        break;
+      case 'libra':
+        signColor = const Color(0xFF388E3C);
+        break;
+      case 'scorpio':
+        signColor = const Color(0xFF1976D2);
+        break;
+      case 'sagittarius':
+        signColor = const Color(0xFF8D6E63);
+        break;
+      case 'capricorn':
+        signColor = const Color(0xFF7B1FA2);
+        break;
+      case 'aquarius':
+        signColor = const Color(0xFF1565C0);
+        break;
+      case 'pisces':
+        signColor = const Color(0xFFC2185B);
+        break;
+      default:
+        signColor = const Color(0xFF795548);
+    }
+
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: signColor.withValues(alpha: 0.08),
+      ),
+      child: Center(
+        child: Text(
+          glyph,
+          style: TextStyle(
+            fontSize: 20,
+            color: signColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+}
+

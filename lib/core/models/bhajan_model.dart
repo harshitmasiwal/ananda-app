@@ -32,6 +32,8 @@ class BhajanModel {
       ? AppConfig.imageUrl(coverPublicId!, transformation: AppConfig.thumbTransform)
       : null;
 
+  String? get artworkUrl => coverUrl;
+
   String get durationLabel {
     if (durationSeconds == null) return '';
     final m = durationSeconds! ~/ 60;

@@ -13,7 +13,8 @@ class AppConfig {
   /// Versionless URL — always serves the latest uploaded catalog.json.
   /// To update content: re-upload catalog.json to Cloudinary (cloud: dfbcf8uz)
   /// with Public ID "catalog" under Raw resource type.
-  static const String catalogUrl = '$_cdnBase/raw/upload/catalog.json';
+  static const String catalogUrl =
+      'https://res.cloudinary.com/dfbcf8uz/raw/upload/v1791310196/ananda/catalog.json';
 
   static String imageUrl(String publicId,
       {String transformation = 'q_auto,f_auto'}) {

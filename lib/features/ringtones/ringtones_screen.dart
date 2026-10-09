@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/providers/language_provider.dart';
@@ -52,8 +53,8 @@ class _RingtonesScreenState extends ConsumerState<RingtonesScreen> {
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
-          statusBarBrightness: Brightness.dark,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
         ),
         child: Scaffold(
           backgroundColor: Colors.transparent,
@@ -151,39 +152,63 @@ class _RingtonesHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF6A1B9A), Color(0xFFAB47BC)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
-        ),
-      ),
+      color: Colors.transparent,
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 16, 20),
+          padding: const EdgeInsets.fromLTRB(20, 14, 16, 10),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white, size: 22),
-                onPressed: onBack,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isHindi ? 'रिंगटोन' : 'Ringtones',
+                      style: GoogleFonts.cinzelDecorative(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFFFFD54F),
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      isHindi
+                          ? 'भक्तिमय रिंगटोन संग्रह'
+                          : 'Devotional ringtone collection',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: const Color(0xFFFFECB3).withValues(alpha: 0.90),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(width: 4),
-              const Icon(Icons.music_note_rounded,
-                  color: Colors.white, size: 26),
               const SizedBox(width: 8),
-              Text(
-                isHindi ? 'रिंगटोन' : 'Ringtones',
-                style: AppTextStyles.appName
-                    .copyWith(fontSize: 24, letterSpacing: 1.0),
+              const LanguageToggle(lightMode: true),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: onBack,
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF380808).withValues(alpha: 0.65),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFD4A017).withValues(alpha: 0.60),
+                      width: 1.0,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 16,
+                    color: Color(0xFFFFD54F),
+                  ),
+                ),
               ),
-              const Spacer(),
-              LanguageToggle(),
             ],
           ),
         ),

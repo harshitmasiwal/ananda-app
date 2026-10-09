@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
@@ -12,6 +13,7 @@ import '../../core/models/holy_book_model.dart';
 import '../../shared/widgets/language_toggle.dart';
 import '../../shared/widgets/bouncing_tap.dart';
 import 'pdf_reader_screen.dart';
+
 
 // ─── Book Tabs ────────────────────────────────────────────────────────────────
 enum HolyBookTab { all, downloaded }
@@ -162,7 +164,7 @@ class HolyBooksScreen extends ConsumerWidget {
     final downloadedIds = ref.watch(downloadedBookIdsProvider);
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.background,
       body: Column(
         children: [
           // ── Header ──────────────────────────────────────────────────────
@@ -242,33 +244,82 @@ class _BooksHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFF388E3C)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
-        ),
-      ),
+      color: Colors.transparent,
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 16, 20),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(Icons.menu_book_rounded,
-                  color: Colors.white.withValues(alpha: 0.9), size: 28),
-              const SizedBox(width: 10),
-              Text(
-                isHindi ? 'पवित्र ग्रंथ' : 'Holy Books',
-                style: AppTextStyles.appName
-                    .copyWith(fontSize: 24, letterSpacing: 1.0),
+              if (Navigator.canPop(context)) ...[
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFBECE1),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFE2C9B6),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 16,
+                        color: Color(0xFF8C3B00),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Container(
+                width: 38,
+                height: 38,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFBECE1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.menu_book_rounded,
+                    color: Color(0xFF8C3B00),
+                    size: 20,
+                  ),
+                ),
               ),
-              const Spacer(),
-              LanguageToggle(),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isHindi ? 'पवित्र ग्रंथ' : 'Holy Scriptures',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF2E170C),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isHindi
+                          ? 'सनातन वैदिक ग्रंथ एवं टीकाएं'
+                          : 'Sacred texts & divine commentaries',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12.5,
+                        color: const Color(0xFF7B6B61),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const LanguageToggle(lightMode: true),
             ],
           ),
         ),
@@ -317,8 +368,12 @@ class _BookCard extends ConsumerWidget {
       scaleFactor: 0.95,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: const Color(0xFFFFF8EE),
           borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: const Color(0xFFD4A017).withValues(alpha: 0.85),
+            width: 1.2,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.08),
@@ -331,7 +386,7 @@ class _BookCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cover image (takes ~65% of card)
+            // Cover image (takes majority of card)
             Expanded(
               flex: 6,
               child: Stack(
@@ -355,26 +410,7 @@ class _BookCard extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  // gradient overlay at bottom of image
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      height: 40,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [
-                            Colors.black.withValues(alpha: 0.4),
-                            Colors.transparent,
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  // PDF badge on top-right
+                  // PDF badge on top-right (green badge as in screenshot)
                   Positioned(
                     top: 8,
                     right: 8,
@@ -386,16 +422,24 @@ class _BookCard extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
+                            color: Colors.black.withValues(alpha: 0.25),
                             blurRadius: 4,
                           ),
                         ],
                       ),
-                      child: const Text('PDF',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700)),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.picture_as_pdf_rounded,
+                              color: Colors.white, size: 10),
+                          SizedBox(width: 3),
+                          Text('PDF',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700)),
+                        ],
+                      ),
                     ),
                   ),
                   // Offline/Downloaded badge on top-left
@@ -440,82 +484,61 @@ class _BookCard extends ConsumerWidget {
                 ],
               ),
             ),
-            // Title & Author & Delete action
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            isHindi ? book.titleHi : book.title,
-                            style: AppTextStyles.h3.copyWith(fontSize: 13),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (book.author.isNotEmpty)
-                            Text(
-                              isHindi ? book.authorHi : book.author,
-                              style: AppTextStyles.bodySmall,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                        ],
+            // Bottom bar: [📖  Title   ( > )] matching Screenshot 3
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFF8EE),
+                border: Border(
+                  top: BorderSide(color: Color(0xFFE2C49C), width: 0.8),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3DEBE),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xFFD4A017).withValues(alpha: 0.6),
+                        width: 0.8,
                       ),
                     ),
-                    if (isDownloaded) ...[
-                      const SizedBox(width: 4),
-                      GestureDetector(
-                        onTap: () {
-                          showDeletePdfConfirmationDialog(
-                            context: context,
-                            book: book,
-                            isHindi: isHindi,
-                            onDeleted: () async {
-                              await ref
-                                  .read(downloadedBookIdsProvider.notifier)
-                                  .deleteBook(book.id);
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      isHindi
-                                          ? 'ग्रंथ डिवाइस स्टोरेज से हटा दिया गया 🗑️'
-                                          : 'Holy Book deleted from device 🗑️',
-                                    ),
-                                    backgroundColor: Colors.red.shade700,
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Icons.delete_outline_rounded,
-                            size: 16,
-                            color: Colors.red.shade700,
-                          ),
-                        ),
+                    child: const Icon(
+                      Icons.menu_book_rounded,
+                      color: Color(0xFF8A4A28),
+                      size: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      isHindi ? book.titleHi : book.title,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF3B0D0D),
                       ),
-                    ],
-                  ],
-                ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFF6B1B1B),
+                    ),
+                    child: const Icon(
+                      Icons.chevron_right_rounded,
+                      color: Color(0xFFFFD54F),
+                      size: 16,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -525,7 +548,7 @@ class _BookCard extends ConsumerWidget {
   }
 }
 
-// ─── Top Tabs: All Books vs Downloaded ───────────────────────────────────────
+// ─── Top Tabs: All Books vs Downloaded (Screenshot 3) ────────────────────────
 class _BooksTabSelector extends ConsumerWidget {
   final HolyBookTab selectedTab;
   final int downloadedCount;
@@ -543,15 +566,15 @@ class _BooksTabSelector extends ConsumerWidget {
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 6),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFF2E7D32).withValues(alpha: 0.15),
-          width: 1,
+          color: const Color(0xFFEDE4D8),
+          width: 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -570,7 +593,7 @@ class _BooksTabSelector extends ConsumerWidget {
               },
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
           Expanded(
             child: _TabButton(
               title: isHindi ? 'डाउनलोड' : 'Downloaded',
@@ -611,39 +634,26 @@ class _TabButton extends StatelessWidget {
       scaleFactor: 0.94,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF2E7D32) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF2E7D32).withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          color: isSelected ? const Color(0xFF8C3B00) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               icon,
-              size: 18,
-              color: isSelected ? Colors.white : AppColors.textSecondary,
+              size: 16,
+              color: isSelected ? Colors.white : const Color(0xFF7B6B61),
             ),
             const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : AppColors.textPrimary,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: 13,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+            Text(
+              title,
+              style: GoogleFonts.outfit(
+                color: isSelected ? Colors.white : const Color(0xFF7B6B61),
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 12.5,
               ),
             ),
             if (badgeCount != null) ...[
@@ -651,17 +661,15 @@ class _TabButton extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? Colors.white.withValues(alpha: 0.25)
-                      : const Color(0xFF2E7D32).withValues(alpha: 0.15),
+                  color: isSelected ? Colors.white : const Color(0xFF8C3B00),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   '$badgeCount',
                   style: TextStyle(
-                    color: isSelected ? Colors.white : const Color(0xFF2E7D32),
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: FontWeight.bold,
+                    color: isSelected ? const Color(0xFF8C3B00) : Colors.white,
                   ),
                 ),
               ),

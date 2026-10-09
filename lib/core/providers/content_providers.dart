@@ -118,6 +118,12 @@ final filteredBhajansProvider =
   final category = ref.watch(selectedBhajanCategoryProvider);
   return ref.watch(catalogProvider).whenData((c) {
     if (category == null) return c.bhajans;
-    return c.bhajans.where((b) => b.category == category).toList();
+    final selClean =
+        category.toLowerCase().replaceAll(RegExp(r'[-_\s]+'), '').trim();
+    return c.bhajans.where((b) {
+      final bClean =
+          b.category.toLowerCase().replaceAll(RegExp(r'[-_\s]+'), '').trim();
+      return bClean == selClean;
+    }).toList();
   });
 });

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
@@ -10,7 +11,6 @@ import '../../core/models/wallpaper_model.dart';
 import '../../core/services/wallpaper_service.dart';
 import '../../shared/widgets/language_toggle.dart';
 import '../../shared/widgets/no_internet_banner.dart';
-import '../../shared/widgets/animated_devotional_background.dart';
 import '../../shared/widgets/bouncing_tap.dart';
 
 class WallpapersScreen extends ConsumerWidget {
@@ -23,38 +23,35 @@ class WallpapersScreen extends ConsumerWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
       ),
       child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: AnimatedDevotionalBackground(
-          mode: DevotionalMode.wallpapers,
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                  // ── Header ──────────────────────────────────────────────────────
-                  _WallpapersHeader(isHindi: isHindi),
+        backgroundColor: AppColors.background,
+        body: Stack(
+          children: [
+            Column(
+              children: [
+                // ── Header ──────────────────────────────────────────────────────
+                _WallpapersHeader(isHindi: isHindi),
 
-                  // ── Sort Selector: Latest vs Popular ──────────────────────────────
-                  const _WallpaperSortSelector(),
+                // ── Sort Selector: Latest vs Popular ──────────────────────────────
+                const _WallpaperSortSelector(),
 
-                  // ── Wallpaper Grid ───────────────────────────────────────────────
-                  const Expanded(child: _WallpaperGrid()),
-                ],
+                // ── Wallpaper Grid ───────────────────────────────────────────────
+                const Expanded(child: _WallpaperGrid()),
+              ],
+            ),
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 4,
+              child: SafeArea(
+                top: false,
+                child: NoInternetBottomCard(),
               ),
-              const Positioned(
-                left: 0,
-                right: 0,
-                bottom: 4,
-                child: SafeArea(
-                  top: false,
-                  child: NoInternetBottomCard(),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -69,33 +66,66 @@ class _WallpapersHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFFFF6B00), Color(0xFFFFAB40)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
-        ),
-      ),
+      color: Colors.transparent,
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 16, 20),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Icon(Icons.wallpaper_rounded,
-                  color: Colors.white, size: 28),
-              const SizedBox(width: 10),
-              Text(
-                isHindi ? 'वॉलपेपर' : 'Wallpapers',
-                style: AppTextStyles.appName
-                    .copyWith(fontSize: 24, letterSpacing: 1.0),
+              if (Navigator.canPop(context)) ...[
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFBECE1),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFE2C9B6),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 16,
+                        color: Color(0xFF8C3B00),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isHindi ? 'दिव्य वॉलपेपर' : 'Divine Wallpapers',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF2E170C),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isHindi
+                          ? 'भक्ति और आध्यात्मिक चित्र HD'
+                          : 'Sacred & spiritual art in HD',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12.5,
+                        color: const Color(0xFF7B6B61),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const Spacer(),
-              LanguageToggle(),
+              const SizedBox(width: 8),
+              const LanguageToggle(lightMode: true),
             ],
           ),
         ),
@@ -114,18 +144,18 @@ class _WallpaperSortSelector extends ConsumerWidget {
     final currentSort = ref.watch(wallpaperSortProvider);
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 10),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFFFF6B00).withValues(alpha: 0.15),
-          width: 1,
+          color: const Color(0xFFEDE4D8),
+          width: 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -144,7 +174,7 @@ class _WallpaperSortSelector extends ConsumerWidget {
               },
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
           Expanded(
             child: _SortTabItem(
               title: isHindi ? 'लोकप्रिय' : 'Popular',
@@ -182,40 +212,26 @@ class _SortTabItem extends StatelessWidget {
       scaleFactor: 0.94,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
         decoration: BoxDecoration(
-          gradient: isSelected
-              ? const LinearGradient(
-                  colors: [Color(0xFFFF6B00), Color(0xFFFFAB40)],
-                )
-              : null,
-          color: isSelected ? null : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFFFF6B00).withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          color: isSelected ? const Color(0xFF8C3B00) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               icon,
-              size: 18,
-              color: isSelected ? Colors.white : AppColors.textSecondary,
+              size: 16,
+              color: isSelected ? Colors.white : const Color(0xFF7B6B61),
             ),
             const SizedBox(width: 6),
             Text(
               title,
-              style: TextStyle(
-                color: isSelected ? Colors.white : AppColors.textPrimary,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 13,
+              style: GoogleFonts.outfit(
+                color: isSelected ? Colors.white : const Color(0xFF7B6B61),
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 12.5,
               ),
             ),
           ],

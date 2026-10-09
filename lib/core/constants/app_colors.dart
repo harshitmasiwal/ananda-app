@@ -3,87 +3,158 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Primary Dark Saffron/Orange palette (rich, high-contrast, devotional)
-  static const Color primary = Color(0xFFD84315);
-  static const Color primaryLight = Color(0xFFE65100);
-  static const Color primaryDark = Color(0xFFBF360C);
+  // ── Core Aesthetic Palette (Matching Anand Screenshots) ───────────
+  static const Color background     = Color(0xFFFAF7F2); // Warm devotional ivory/cream
+  static const Color surface        = Color(0xFFFFFFFF); // Pure white card surface
+  static const Color surfaceTint    = Color(0xFFFDFBF7); // Soft tinted card
+  static const Color cardBg         = Color(0xFFFFFFFF);
+  
+  // Primary terracotta / warm saddle brown
+  static const Color primary        = Color(0xFF8C3B00); // Deep terracotta (buttons, active states)
+  static const Color primaryLight   = Color(0xFFA84E0B); // Lighter terracotta
+  static const Color primaryDark    = Color(0xFF5A2503); // Deepest terracotta
+  
+  // Peach / warm saffron accent & pill tints
+  static const Color peachPill      = Color(0xFFFBECE1); // Soft peach badge / pill background
+  static const Color peachPillBorder= Color(0xFFF0D8C7);
+  static const Color terracottaAccent = Color(0xFF943E00);
+  static const Color orangeGradStart= Color(0xFFE56A10);
+  static const Color orangeGradEnd  = Color(0xFFB54502);
 
-  // Gold accent
-  static const Color gold = Color(0xFFFFD700);
-  static const Color goldDark = Color(0xFFB8860B);
-  static const Color goldLight = Color(0xFFFFF0A0);
+  // Gold / Amber
+  static const Color gold           = Color(0xFFC9883E); // Radiant sun/chakra gold
+  static const Color goldLight      = Color(0xFFFDF4E7);
+  static const Color goldBright     = Color(0xFFE89A2A);
 
-  // Background
-  static const Color background = Color(0xFFFFF8F0);
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color cardBg = Color(0xFFFFF3E0);
+  // Mini-player background
+  static const Color miniPlayerBg   = Color(0xFFEAE5DB); // Warm muted grey-cream
 
-  // Text
-  static const Color textPrimary = Color(0xFF3E1F00);
-  static const Color textSecondary = Color(0xFF7A4E2D);
-  static const Color textOnPrimary = Color(0xFFFFFFFF);
+  // Typography colors
+  static const Color textPrimary    = Color(0xFF2C1810); // Rich dark warm brown
+  static const Color textSecondary  = Color(0xFF7B6B61); // Muted brown-grey
+  static const Color textTertiary   = Color(0xFFA5958A); // Subtle grey-brown
+  static const Color textTerracotta = Color(0xFF8C3B00); // Terracotta accent text
+  static const Color textOnPrimary  = Color(0xFFFFFFFF);
+  static const Color textOnDark     = Color(0xFFFFFFFF);
 
-  // Deep Saffron Gradients (High contrast for white text)
-  static const LinearGradient darkSaffronGradient = LinearGradient(
+  // Borders & Dividers
+  static const Color border         = Color(0xFFEFE9DE); // Subtle card border
+  static const Color borderLight    = Color(0xFFF5EFE6);
+  static const Color divider        = Color(0xFFEFE9DE);
+
+  // Nav bar
+  static const Color navBarBg       = Color(0xFFFAF7F2);
+  static const Color navActive      = Color(0xFF8C3B00);
+  static const Color navInactive    = Color(0xFF7B6B61);
+  static const Color navPill        = Color(0xFFFBECE1);
+
+  // Compatibility aliases for existing screens
+  static const Color maroon         = Color(0xFF8C3B00);
+  static const Color maroonMid      = Color(0xFFA84E0B);
+  static const Color maroonLight    = Color(0xFFC25D14);
+  static const Color amber          = Color(0xFFC9883E);
+  static const Color amberLight     = Color(0xFFE89A2A);
+  static const Color saffron        = Color(0xFFE56A10);
+  static const Color cream          = Color(0xFFFAF7F2);
+  static const Color surfaceAlt     = Color(0xFFF5EFE6);
+  static const Color goldDark       = Color(0xFF9E651D);
+  static const Color textGold       = Color(0xFFC9883E);
+  static const Color featuredBg     = Color(0xFF8C3B00);
+  static const Color featuredBgDark = Color(0xFF5A2503);
+  static const Color chipActive     = Color(0xFF8C3B00);
+  static const Color chipInactive   = Color(0xFFFBECE1);
+  static const Color shimmer        = Color(0xFFEDE6DA);
+  static const Color shimmerHighlight = Color(0xFFFFFFFF);
+
+  static const Color modeHome       = Color(0xFF8C3B00);
+  static const Color modeBhajans    = Color(0xFF8C3B00);
+  static const Color modeBooks      = Color(0xFF6B3A10);
+  static const Color modeRingtones  = Color(0xFF8C3B00);
+  static const Color modeHoroscope  = Color(0xFF4A2B60);
+  static const Color modeWallpapers = Color(0xFF8C3B00);
+
+  // Gradients
+  static const LinearGradient headerGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFBF360C), Color(0xFFD84315), Color(0xFFE65100)],
+    colors: [Color(0xFFE56A10), Color(0xFFB54502)],
+  );
+
+  static const LinearGradient logoGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFE56A10), Color(0xFF943E00)],
+  );
+
+  static const LinearGradient heroGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF8C3B00), Color(0xFFB54502)],
+  );
+
+  static const LinearGradient darkSaffronGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFF5A2503), Color(0xFF8C3B00)],
   );
 
   static const LinearGradient saffronGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFBF360C), Color(0xFFD84315)],
+    colors: [Color(0xFFE56A10), Color(0xFF943E00)],
   );
 
   static const LinearGradient goldGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFFFD700), Color(0xFFB8860B)],
+    colors: [Color(0xFFE89A2A), Color(0xFFC9883E)],
   );
 
-  static const LinearGradient headerGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFFBF360C), Color(0xFFD84315), Color(0xFFE65100)],
+  static const LinearGradient backgroundGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFFFAF7F2), Color(0xFFF5EFE6)],
   );
 
-  // Distinct mode theme colors
-  static const Color modeHome = Color(0xFFD84315);       // Deep Dark Saffron
-  static const Color modeBhajans = Color(0xFF6A1B9A);    // Royal Purple
-  static const Color modeBooks = Color(0xFF2E7D32);      // Sacred Green
-  static const Color modeRingtones = Color(0xFF6A1B9A);  // Mystic Violet
-  static const Color modeHoroscope = Color(0xFF1565C0);  // Cosmic Blue
-  static const Color modeWallpapers = Color(0xFFFF6B00); // Amber Orange
-
-  // Mode header gradients
   static const LinearGradient bhajanHeaderGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF4A148C), Color(0xFF6A1B9A), Color(0xFF7B1FA2)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFF5A2503), Color(0xFF8C3B00)],
   );
 
   static const LinearGradient booksHeaderGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFF388E3C)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFF5A2503), Color(0xFF8C3B00)],
   );
 
-  // Section card gradients
+  static const LinearGradient astroHeaderGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFF2C1642), Color(0xFF52285E)],
+  );
+
   static const List<List<Color>> sectionGradients = [
-    [Color(0xFFFF6B00), Color(0xFFFFAB40)], // Wallpapers – amber orange
-    [Color(0xFF6A1B9A), Color(0xFFAB47BC)], // Ringtones – purple
-    [Color(0xFF1565C0), Color(0xFF42A5F5)], // Horoscope – blue
-    [Color(0xFF2E7D32), Color(0xFF66BB6A)], // Holy Books – green
-    [Color(0xFF6A1B9A), Color(0xFF8E24AA)], // Bhajans – royal purple
+    [Color(0xFFE56A10), Color(0xFFB54502)],
+    [Color(0xFF8C3B00), Color(0xFFA84E0B)],
+    [Color(0xFF3A2050), Color(0xFF653B82)],
+    [Color(0xFF8C3B00), Color(0xFFC9883E)],
+    [Color(0xFF8C3B00), Color(0xFFB54502)],
   ];
 
-  // Misc
-  static const Color divider = Color(0xFFFFE0B2);
-  static const Color shimmer = Color(0xFFFFE0B2);
-  static const Color shimmerHighlight = Color(0xFFFFF3E0);
+  static List<BoxShadow> get cardShadow => [
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.03),
+      blurRadius: 10,
+      offset: const Offset(0, 2),
+    ),
+  ];
 
-  // Nav
-  static const Color navActive = Color(0xFFD84315);
-  static const Color navInactive = Color(0xFF7A4E2D);
+  static List<BoxShadow> get elevatedCardShadow => [
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.06),
+      blurRadius: 16,
+      offset: const Offset(0, 4),
+    ),
+  ];
 }

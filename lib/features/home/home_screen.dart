@@ -1,742 +1,703 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_strings.dart';
-import '../../core/constants/app_text_styles.dart';
-import '../../core/providers/language_provider.dart';
-import '../../shared/widgets/language_toggle.dart';
-import '../wallpapers/wallpapers_screen.dart';
-import '../ringtones/ringtones_screen.dart';
-import '../horoscope/horoscope_screen.dart';
+import '../../shared/widgets/anand_header.dart';
 import '../../shared/widgets/bouncing_tap.dart';
+import '../wallpapers/wallpapers_screen.dart';
+import '../holy_books/holy_books_screen.dart';
+import '../horoscope/horoscope_screen.dart';
+import '../shell/main_shell.dart';
 
-// ─── Daily Shlokas ─────────────────────────────────────────────────────────────
-const _shlokas = [
-  (
-    'कर्मण्येवाधिकारस्ते मा फलेषु कदाचन।',
-    'You have the right to perform your duties, but not to the fruits of action.',
-    'कर्म करो, फल की चिंता मत करो।',
-  ),
-  (
-    'सत्यं शिवं सुन्दरम्',
-    'Truth is God and God is Beauty.',
-    'सत्य ही ईश्वर है और ईश्वर ही सौन्दर्य।',
-  ),
-  (
-    'तमसो मा ज्योतिर्गमय',
-    'Lead me from darkness to light.',
-    'अंधकार से प्रकाश की ओर ले चलो।',
-  ),
-  (
-    'सर्वे भवन्तु सुखिनः',
-    'May all beings be happy and free from suffering.',
-    'सभी प्राणी सुखी हों।',
-  ),
-  (
-    'यत्र नार्यस्तु पूज्यन्ते, रमन्ते तत्र देवताः',
-    'Where women are revered, gods rejoice.',
-    'जहाँ नारी का सम्मान होता है, वहाँ देवता निवास करते हैं।',
-  ),
-  (
-    'अहं ब्रह्मास्मि',
-    'I am Brahman — the ultimate reality.',
-    'मैं ब्रह्म हूँ।',
-  ),
-  (
-    'वसुधैव कुटुम्बकम्',
-    'The whole world is one family.',
-    'पूरा विश्व एक परिवार है।',
-  ),
-];
-
-(String, String, String) _todayShloka() {
-  final idx = DateTime.now().day % _shlokas.length;
-  return _shlokas[idx];
-}
-
-// ─── Home Screen ──────────────────────────────────────────────────────────────
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
-  String _greeting(bool isHindi) {
-    final h = DateTime.now().hour;
-    if (isHindi) {
-      if (h < 12) return AppStrings.morningGreetingHi;
-      if (h < 17) return AppStrings.afternoonGreetingHi;
-      return AppStrings.eveningGreetingHi;
-    }
-    if (h < 12) return AppStrings.morningGreeting;
-    if (h < 17) return AppStrings.afternoonGreeting;
-    return AppStrings.eveningGreeting;
-  }
-
-  String _greetingEmoji() {
-    final h = DateTime.now().hour;
-    if (h < 12) return '🌅';
-    if (h < 17) return '☀️';
-    return '🌙';
-  }
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isHindi = ref.watch(isHindiProvider);
-    final shloka = _todayShloka();
-
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // ── Curved Header Card (matching Bhajans & Books) ─────────────────
-          SliverToBoxAdapter(
-            child: _HomeHeader(
-              isHindi: isHindi,
-              greeting: _greeting(isHindi),
-              greetingEmoji: _greetingEmoji(),
-            ),
-          ),
-
-          // ── Daily Greeting Card ────────────────────────────────────────────
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-            sliver: SliverToBoxAdapter(
-              child: _GreetingCard(
-                isHindi: isHindi,
-                shloka: shloka,
-              ),
-            ),
-          ),
-
-          // ── Section label ──────────────────────────────────────────────────
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
-            sliver: SliverToBoxAdapter(
-              child: Row(
-                children: [
-                  Text(
-                    isHindi ? 'सुविधाएँ' : 'Explore',
-                    style: AppTextStyles.sectionHeader,
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      isHindi ? '6 सुविधाएँ' : '6 Features',
-                      style: AppTextStyles.bodySmall
-                          .copyWith(color: AppColors.primary, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── Feature cards (2-column grid) ─────────────────────────────────
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 14,
-                mainAxisSpacing: 14,
-                childAspectRatio: 1.0,
-              ),
-              delegate: SliverChildListDelegate([
-                _FeatureCard(
-                  icon: Icons.wallpaper_rounded,
-                  label: isHindi
-                      ? AppStrings.wallpapersTitleHi
-                      : AppStrings.wallpapersTitle,
-                  subtitle: isHindi
-                      ? AppStrings.wallpapersDescHi
-                      : AppStrings.wallpapersDesc,
-                  gradient: AppColors.sectionGradients[0],
-                  onTap: () => _push(context, const WallpapersScreen()),
-                ),
-                _FeatureCard(
-                  icon: Icons.music_note_rounded,
-                  label: isHindi
-                      ? AppStrings.ringtonesTitleHi
-                      : AppStrings.ringtonesTitle,
-                  subtitle: isHindi
-                      ? AppStrings.ringtonesDescHi
-                      : AppStrings.ringtonesDesc,
-                  gradient: AppColors.sectionGradients[1],
-                  onTap: () => _push(context, const RingtonesScreen()),
-                ),
-                _FeatureCard(
-                  icon: Icons.auto_awesome_rounded,
-                  label: isHindi
-                      ? AppStrings.horoscopeTitleHi
-                      : AppStrings.horoscopeTitle,
-                  subtitle: isHindi
-                      ? AppStrings.horoscopeDescHi
-                      : AppStrings.horoscopeDesc,
-                  gradient: AppColors.sectionGradients[2],
-                  onTap: () => _push(context, const HoroscopeScreen()),
-                ),
-                _FeatureCard(
-                  icon: Icons.calendar_today_rounded,
-                  label: isHindi ? 'पंचांग' : 'Panchang',
-                  subtitle:
-                      isHindi ? 'आज का पंचांग देखें' : 'View today\'s Panchang',
-                  gradient: const [Color(0xFF6D4C41), Color(0xFFA1887F)],
-                  onTap: () => _push(
-                    context,
-                    const HoroscopeScreen(showPanchangFirst: true),
-                  ),
-                ),
-              ]),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _push(BuildContext context, Widget screen) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
-  }
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-// ─── Home Header ──────────────────────────────────────────────────────────────
-class _HomeHeader extends StatelessWidget {
-  final bool isHindi;
-  final String greeting;
-  final String greetingEmoji;
-  const _HomeHeader({
-    required this.isHindi,
-    required this.greeting,
-    required this.greetingEmoji,
-  });
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: AppColors.headerGradient,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x38BF360C),
-            blurRadius: 18,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: SafeArea(
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
         bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 16, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  // Om circle
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.18),
-                      border: Border.all(
-                        color: AppColors.gold.withValues(alpha: 0.6),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'ॐ',
-                        style: TextStyle(
-                          fontSize: 24,
-                          color: AppColors.gold,
-                          fontWeight: FontWeight.w700,
+        child: Column(
+          children: [
+            // Top App Bar
+            const AnandHeader(),
+
+            // Scrollable Home Content
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 6),
+
+                    // ── Search Bar (Screenshot 3) ────────────────────────────
+                    Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: const Color(0xFFEDE4D8),
+                          width: 1.0,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 14),
+                          const Icon(
+                            Icons.search_rounded,
+                            size: 20,
+                            color: Color(0xFF8C7C72),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: TextField(
+                              controller: _searchController,
+                              style: GoogleFonts.outfit(
+                                fontSize: 13.5,
+                                color: const Color(0xFF2E170C),
+                              ),
+                              decoration: InputDecoration(
+                                isDense: true,
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                filled: false,
+                                contentPadding: EdgeInsets.zero,
+                                hintText: 'Search Bhajans, Mantras, Aartis...',
+                                hintStyle: GoogleFonts.outfit(
+                                  fontSize: 13.5,
+                                  color: const Color(0xFF9E8E81),
+                                ),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.mic_none_rounded,
+                              size: 20,
+                              color: Color(0xFF8C7C72),
+                            ),
+                            onPressed: () {},
+                          ),
+                          const SizedBox(width: 4),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          isHindi ? AppStrings.appNameHi : AppStrings.appName,
-                          style: AppTextStyles.appName.copyWith(
-                            color: Colors.white,
-                            fontSize: 23,
-                            fontWeight: FontWeight.w800,
-                            shadows: const [
-                              Shadow(
-                                color: Colors.black45,
-                                blurRadius: 10,
-                                offset: Offset(0, 2),
+
+                    const SizedBox(height: 16),
+
+                    // ── Shubh Prabhat Card (Screenshot 3) ────────────────────
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(
+                          color: const Color(0xFFEDE4D8),
+                          width: 1.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Top Row: SHUBH PRABHAT + Ekadashi Vrat
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'SHUBH PRABHAT',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.2,
+                                  color: const Color(0xFF8C3B00),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFBECE1),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text('🌱', style: TextStyle(fontSize: 11)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Ekadashi Vrat',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF8C3B00),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
+                          const SizedBox(height: 6),
+
+                          // Title: Namaste, Devotee
+                          Text(
+                            'Namaste, Devotee',
+                            style: GoogleFonts.playfairDisplay(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF2E170C),
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // 3 Metric Stats with vertical dividers
+                          Row(
+                            children: [
+                              // Col 1: Tithi
+                              Expanded(
+                                child: _buildPanchangStat(
+                                  iconEmoji: '🌅',
+                                  label: 'Tithi',
+                                  value: 'Shukla 11',
+                                ),
+                              ),
+                              Container(
+                                width: 1,
+                                height: 32,
+                                color: const Color(0xFFEDE4D8),
+                              ),
+                              // Col 2: Sunrise
+                              Expanded(
+                                child: _buildPanchangStat(
+                                  iconEmoji: '☀️',
+                                  label: 'Sunrise',
+                                  value: '06:12 AM',
+                                ),
+                              ),
+                              Container(
+                                width: 1,
+                                height: 32,
+                                color: const Color(0xFFEDE4D8),
+                              ),
+                              // Col 3: Muhurta
+                              Expanded(
+                                child: _buildPanchangStat(
+                                  iconEmoji: '🌙',
+                                  label: 'Muhurta',
+                                  value: 'Brahma 4:48',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    // ── Today's Sacred Darshan Banner (Screenshot 3) ─────────
+                    Container(
+                      height: 220,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(22),
+                        child: Stack(
+                          fit: StackFit.expand,
                           children: [
-                            Text(greetingEmoji,
-                                style: const TextStyle(fontSize: 14)),
-                            const SizedBox(width: 6),
-                            Text(
-                              greeting,
-                              style: AppTextStyles.greeting.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                shadows: const [
-                                  Shadow(
-                                    color: Colors.black38,
-                                    blurRadius: 6,
-                                    offset: Offset(0, 1),
+                            // Background Image
+                            Image.network(
+                              'https://images.unsplash.com/photo-1590076212555-5c024505f013?w=800&q=80',
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Image.asset(
+                                'assets/images/temple_sunset_bg.jpg',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+
+                            // Dark Gradient Overlay for text readability
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.black.withValues(alpha: 0.15),
+                                    Colors.black.withValues(alpha: 0.45),
+                                    Colors.black.withValues(alpha: 0.85),
+                                  ],
+                                  stops: const [0.0, 0.5, 1.0],
+                                ),
+                              ),
+                            ),
+
+                            // Top Left Pill: • TODAY'S SACRED DARSHAN
+                            Positioned(
+                              top: 14,
+                              left: 14,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.92),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFD32F2F),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      "TODAY'S SACRED DARSHAN",
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.8,
+                                        color: const Color(0xFF8C3B00),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            // Bottom Content & Play Button
+                            Positioned(
+                              bottom: 16,
+                              left: 16,
+                              right: 16,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'AYODHYA RAM MANDIR',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: 1.2,
+                                            color: Colors.white70,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Mangala Aarti Darshan',
+                                          style: GoogleFonts.playfairDisplay(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Begins with consecrated Vedic stutis',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 11.5,
+                                            color: Colors.white.withValues(alpha: 0.85),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+
+                                  // Terracotta Play Circle
+                                  BouncingTap(
+                                    onTap: () {
+                                      // Switch to Sangeet tab to listen to darshan aarti
+                                      ref.read(selectedTabProvider.notifier).state = 1;
+                                    },
+                                    child: Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF943E00),
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Color(0x55943E00),
+                                            blurRadius: 10,
+                                            offset: Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.play_arrow_rounded,
+                                          size: 30,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
                           ],
                         ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    // ── Sacred Portals Section (Exactly 3 Options: Horoscope, Panchang, Wallpapers) ──
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Sacred Portals',
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF2E170C),
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  LanguageToggle(),
-                ],
-              ),
-              const SizedBox(height: 14),
-              // Constant Devotional & Faith Tagline
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.22),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppColors.gold.withValues(alpha: 0.35),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 15,
-                      color: AppColors.gold,
+
+                    const SizedBox(height: 14),
+
+                    // 3 Visible Cards side-by-side
+                    Row(
+                      children: [
+                        // 1. Horoscope
+                        Expanded(
+                          child: _buildPortalCard(
+                            icon: Icons.auto_awesome_rounded,
+                            title: 'Horoscope',
+                            subtitle: 'Daily Rashi',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const HoroscopeScreen(showPanchangFirst: false),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+
+                        // 2. Panchang
+                        Expanded(
+                          child: _buildPortalCard(
+                            icon: Icons.calendar_month_rounded,
+                            title: 'Panchang',
+                            subtitle: 'Tithi & Muhurta',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const HoroscopeScreen(showPanchangFirst: true),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+
+                        // 3. Wallpapers
+                        Expanded(
+                          child: _buildPortalCard(
+                            icon: Icons.image_outlined,
+                            title: 'Wallpapers',
+                            subtitle: 'Divine HD',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const WallpapersScreen()),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        isHindi
-                            ? 'आस्था, भक्ति और आत्मिक शांति का पावन धाम'
-                            : 'Your Daily Sanctuary of Faith, Devotion & Peace',
-                        style: const TextStyle(
-                          fontSize: 12.5,
+
+                    const SizedBox(height: 24),
+
+                    // ── Pavitra Granth Section (Scriptures Only) ──────────────
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Pavitra Granth',
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF2E170C),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const HolyBooksScreen()),
+                            );
+                          },
+                          child: Text(
+                            'View All >',
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF8C3B00),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Single Featured Holy Books Card (Wallpaper removed as requested)
+                    BouncingTap(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const HolyBooksScreen()),
+                        );
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
                           color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.2,
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: const Color(0xFFEDE4D8),
+                            width: 1.0,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.02),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 52,
+                              height: 52,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFBECE1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.menu_book_rounded,
+                                  color: Color(0xFF8C3B00),
+                                  size: 26,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Sacred Scriptures & PDFs',
+                                    style: GoogleFonts.playfairDisplay(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF2E170C),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    'Read Shrimad Bhagavad Gita, Ramcharitmanas & Vedic Granth offline',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 12,
+                                      color: const Color(0xFF7B6B61),
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              width: 34,
+                              height: 34,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFBECE1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  size: 14,
+                                  color: Color(0xFF8C3B00),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
-}
 
-// ─── Daily Greeting Card ──────────────────────────────────────────────────────
-class _GreetingCard extends StatefulWidget {
-  final bool isHindi;
-  final (String, String, String) shloka;
-  const _GreetingCard({required this.isHindi, required this.shloka});
-
-  @override
-  State<_GreetingCard> createState() => _GreetingCardState();
-}
-
-class _GreetingCardState extends State<_GreetingCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _shimmerCtrl;
-  late Animation<double> _shimmerAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _shimmerCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat(reverse: true);
-    _shimmerAnim = Tween<double>(begin: -1.5, end: 1.5).animate(
-      CurvedAnimation(parent: _shimmerCtrl, curve: Curves.easeInOut),
+  Widget _buildPanchangStat({
+    required String iconEmoji,
+    required String label,
+    required String value,
+  }) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(iconEmoji, style: const TextStyle(fontSize: 13)),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: GoogleFonts.outfit(
+                fontSize: 11.5,
+                color: const Color(0xFF7B6B61),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: GoogleFonts.outfit(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF2E170C),
+          ),
+        ),
+      ],
     );
   }
 
-  @override
-  void dispose() {
-    _shimmerCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final weekdays = [
-      'Monday', 'Tuesday', 'Wednesday',
-      'Thursday', 'Friday', 'Saturday', 'Sunday',
-    ];
-    final weekdaysHi = [
-      'सोमवार', 'मंगलवार', 'बुधवार',
-      'गुरुवार', 'शुक्रवार', 'शनिवार', 'रविवार',
-    ];
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    final dayName = widget.isHindi
-        ? weekdaysHi[now.weekday - 1]
-        : weekdays[now.weekday - 1];
-
+  Widget _buildPortalCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
     return BouncingTap(
-      scaleFactor: 0.98,
-      onTap: () {},
-      child: AnimatedBuilder(
-        animation: _shimmerAnim,
-        builder: (context, child) {
-          return Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFBF360C), Color(0xFFD84315), Color(0xFFE65100)],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFBF360C).withValues(alpha: 0.45),
-                  blurRadius: 24,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+      onTap: onTap,
+      child: Container(
+        width: 125,
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFFEDE4D8),
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            child: child,
-          );
-        },
-      child: Stack(
-        children: [
-          // Decorative circle top right
-          Positioned(
-            right: -30,
-            top: -30,
-            child: Container(
-              width: 130,
-              height: 130,
-              decoration: BoxDecoration(
+          ],
+        ),
+        child: Column(
+          children: [
+            // Circular peach icon container
+            Container(
+              width: 52,
+              height: 52,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFBECE1),
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.08),
+              ),
+              child: Center(
+                child: Icon(
+                  icon,
+                  size: 24,
+                  color: const Color(0xFF8C3B00),
+                ),
               ),
             ),
-          ),
-          // Decorative circle bottom left
-          Positioned(
-            left: -20,
-            bottom: -20,
-            child: Container(
-              width: 90,
-              height: 90,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.06),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: GoogleFonts.outfit(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF2E170C),
               ),
             ),
-          ),
-
-          Padding(
-            padding: const EdgeInsets.all(22),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ── Top row: date + om ──────────────────────────────
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Date block
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          dayName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Text(
-                          '${now.day} ${months[now.month - 1]}, ${now.year}',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    // Om emblem
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.2),
-                        border: Border.all(
-                            color: AppColors.gold.withValues(alpha: 0.6),
-                            width: 1.5),
-                      ),
-                      child: const Center(
-                        child: Text('ॐ',
-                            style: TextStyle(
-                                fontSize: 26,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700)),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // ── Divider ─────────────────────────────────────────
-                Container(
-                  height: 1,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.white.withValues(alpha: 0.0),
-                        Colors.white.withValues(alpha: 0.3),
-                        Colors.white.withValues(alpha: 0.0),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // ── Sanskrit shloka ─────────────────────────────────
-                Text(
-                  widget.shloka.$1,
-                  style: const TextStyle(
-                    color: AppColors.gold,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    fontStyle: FontStyle.italic,
-                    height: 1.4,
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                // ── Meaning ─────────────────────────────────────────
-                Text(
-                  widget.isHindi ? widget.shloka.$3 : widget.shloka.$2,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    height: 1.6,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // ── Bottom: label ───────────────────────────────────
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.auto_awesome_rounded,
-                              size: 11, color: AppColors.gold),
-                          const SizedBox(width: 5),
-                          Text(
-                            widget.isHindi
-                                ? 'आज का श्लोक'
-                                : 'Shloka of the Day',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Spacer(),
-                    const Text('🙏', style: TextStyle(fontSize: 20)),
-                  ],
-                ),
-              ],
+            const SizedBox(height: 1),
+            Text(
+              subtitle,
+              style: GoogleFonts.outfit(
+                fontSize: 11,
+                color: const Color(0xFF7B6B61),
+              ),
             ),
-          ),
-        ],
-      ),
-    ),
-    );
-  }
-}
+          ],
 
-// ─── Feature Card ─────────────────────────────────────────────────────────────
-class _FeatureCard extends StatefulWidget {
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final List<Color> gradient;
-  final VoidCallback onTap;
-
-  const _FeatureCard({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.gradient,
-    required this.onTap,
-  });
-
-  @override
-  State<_FeatureCard> createState() => _FeatureCardState();
-}
-
-class _FeatureCardState extends State<_FeatureCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 100),
-      lowerBound: 0.94,
-      upperBound: 1.0,
-    )..value = 1.0;
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => _ctrl.reverse(),
-      onTapUp: (_) {
-        _ctrl.forward();
-        widget.onTap();
-      },
-      onTapCancel: () => _ctrl.forward(),
-      child: ScaleTransition(
-        scale: _ctrl,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: widget.gradient,
-            ),
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: widget.gradient.last.withValues(alpha: 0.4),
-                blurRadius: 14,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              // Decorative circles
-              Positioned(
-                right: -14,
-                top: -14,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: -10,
-                bottom: -20,
-                child: Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.07),
-                  ),
-                ),
-              ),
-              // Content
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Icon container
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.22),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Icon(widget.icon, color: Colors.white, size: 22),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(widget.label,
-                            style: AppTextStyles.cardTitle
-                                .copyWith(fontSize: 15)),
-                        const SizedBox(height: 2),
-                        Text(widget.subtitle,
-                            style: AppTextStyles.cardSubtitle,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );

@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_text_styles.dart';
-import '../../core/providers/language_provider.dart';
 import '../home/home_screen.dart';
 import '../bhajans/bhajans_screen.dart';
-import '../holy_books/holy_books_screen.dart';
-import 'package:permission_handler/permission_handler.dart';
+import '../japa/japa_screen.dart';
+import '../sadhak/sadhak_screen.dart';
+import '../../shared/widgets/mini_audio_player.dart';
 import '../../shared/widgets/no_internet_banner.dart';
-
-import '../../shared/widgets/animated_devotional_background.dart';
 import '../../shared/widgets/bouncing_tap.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-// Tracks the active bottom‑nav tab (0 = Home, 1 = Bhajans, 2 = Books)
+// Tracks the active bottom-nav tab (0 = Pranam, 1 = Sangeet, 2 = Japa, 3 = Sadhak)
 final selectedTabProvider = StateProvider<int>((ref) => 0);
 
 class MainShell extends ConsumerStatefulWidget {
@@ -29,14 +28,14 @@ class _MainShellState extends ConsumerState<MainShell> {
   static const _screens = [
     HomeScreen(),
     BhajansScreen(),
-    HolyBooksScreen(),
+    JapaScreen(),
+    SadhakScreen(),
   ];
 
   @override
   void initState() {
     super.initState();
-    _pageController =
-        PageController(initialPage: ref.read(selectedTabProvider));
+    _pageController = PageController(initialPage: ref.read(selectedTabProvider));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _requestNotificationPermission();
     });
@@ -57,32 +56,16 @@ class _MainShellState extends ConsumerState<MainShell> {
     } catch (_) {}
   }
 
-  Color _getActiveModeColor(int tab) {
-    switch (tab) {
-      case 0:
-        return AppColors.modeHome;     // Deep Dark Saffron Orange for Home
-      case 1:
-        return AppColors.modeBhajans;  // Royal Devotional Purple for Bhajans
-      case 2:
-        return AppColors.modeBooks;    // Sacred Forest Green for Books
-      default:
-        return AppColors.modeHome;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final tab = ref.watch(selectedTabProvider);
-    final isHindi = ref.watch(isHindiProvider);
-    final activeColor = _getActiveModeColor(tab);
 
-    // Keep PageView in sync if tab is changed externally
+    // Keep PageView in sync if tab changed externally
     ref.listen<int>(selectedTabProvider, (prev, next) {
-      if (_pageController.hasClients &&
-          _pageController.page?.round() != next) {
+      if (_pageController.hasClients && _pageController.page?.round() != next) {
         _pageController.animateToPage(
           next,
-          duration: const Duration(milliseconds: 320),
+          duration: const Duration(milliseconds: 280),
           curve: Curves.easeInOut,
         );
       }
@@ -91,46 +74,44 @@ class _MainShellState extends ConsumerState<MainShell> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.white,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: Color(0xFFFFFFFF),
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: AnimatedDevotionalBackground(
-          pageController: _pageController,
-          child: Stack(
-            children: [
-              // Horizontal swipe between Home, Bhajans, and Books
-              PageView(
-                controller: _pageController,
-                physics: const BouncingScrollPhysics(),
-                onPageChanged: (i) {
-                  ref.read(selectedTabProvider.notifier).state = i;
-                },
-                children: _screens,
-              ),
-              const Positioned(
-                left: 0,
-                right: 0,
-                bottom: 4,
-                child: NoInternetBottomCard(),
-              ),
-            ],
-          ),
+        backgroundColor: AppColors.background,
+        body: Stack(
+          children: [
+            // Main Page Content
+            PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(), // tab navigation only
+              children: _screens,
+            ),
+
+            // Persistent Floating Mini-Audio Player right above bottom nav
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 4,
+              child: MiniAudioPlayer(),
+            ),
+
+            // No internet notification card if offline
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 74,
+              child: NoInternetBottomCard(),
+            ),
+          ],
         ),
         bottomNavigationBar: _BottomNav(
           selectedIndex: tab,
-          activeColor: activeColor,
-          isHindi: isHindi,
           onTap: (i) {
             ref.read(selectedTabProvider.notifier).state = i;
-            _pageController.animateToPage(
-              i,
-              duration: const Duration(milliseconds: 320),
-              curve: Curves.easeInOut,
-            );
+            _pageController.jumpToPage(i);
           },
         ),
       ),
@@ -138,52 +119,49 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 }
 
-// ─── Nav items ────────────────────────────────────────────────────────────────
+// ─── Nav Item Definition ───────────────────────────────────────────────────────
 class _NavItem {
   final IconData icon;
   final IconData activeIcon;
   final String label;
-  final String labelHi;
+
   const _NavItem({
     required this.icon,
     required this.activeIcon,
     required this.label,
-    required this.labelHi,
   });
 }
 
 const _navItems = [
   _NavItem(
-    icon: Icons.home_outlined,
-    activeIcon: Icons.home_rounded,
-    label: 'Home',
-    labelHi: 'होम',
+    icon: Icons.spa_outlined,
+    activeIcon: Icons.spa_rounded,
+    label: 'Pranam',
   ),
   _NavItem(
-    icon: Icons.headphones_outlined,
-    activeIcon: Icons.headphones_rounded,
-    label: 'Bhajans',
-    labelHi: 'भजन',
+    icon: Icons.music_note_outlined,
+    activeIcon: Icons.music_note_rounded,
+    label: 'Sangeet',
   ),
   _NavItem(
-    icon: Icons.menu_book_outlined,
-    activeIcon: Icons.menu_book_rounded,
-    label: 'Books',
-    labelHi: 'ग्रंथ',
+    icon: Icons.self_improvement_rounded,
+    activeIcon: Icons.self_improvement_rounded,
+    label: 'Japa',
+  ),
+  _NavItem(
+    icon: Icons.person_outline_rounded,
+    activeIcon: Icons.person_rounded,
+    label: 'Sadhak',
   ),
 ];
 
-// ─── Bottom Nav bar ───────────────────────────────────────────────────────────
+// ─── Bottom Navigation Bar (Matching Screenshots 1, 2, 3, 4) ──────────────────
 class _BottomNav extends StatelessWidget {
   final int selectedIndex;
-  final Color activeColor;
-  final bool isHindi;
   final ValueChanged<int> onTap;
 
   const _BottomNav({
     required this.selectedIndex,
-    required this.activeColor,
-    required this.isHindi,
     required this.onTap,
   });
 
@@ -191,16 +169,20 @@ class _BottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: const Color(0xFFEDE4D8).withValues(alpha: 0.9),
+            width: 1.0,
+          ),
+        ),
         boxShadow: [
           BoxShadow(
-            color: activeColor.withValues(alpha: 0.14),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
           ),
         ],
-        border: const Border(
-            top: BorderSide(color: AppColors.divider, width: 1)),
       ),
       child: SafeArea(
         top: false,
@@ -210,48 +192,38 @@ class _BottomNav extends StatelessWidget {
             children: List.generate(_navItems.length, (i) {
               final item = _navItems[i];
               final active = i == selectedIndex;
+
               return Expanded(
                 child: BouncingTap(
                   onTap: () => onTap(i),
                   behavior: HitTestBehavior.opaque,
-                  scaleFactor: 0.92,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // Active Pill Indicator
                       AnimatedContainer(
-                        duration: const Duration(milliseconds: 260),
-                        curve: Curves.easeInOut,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 6),
+                        duration: const Duration(milliseconds: 200),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: active ? 20 : 12,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: active
-                              ? activeColor.withValues(alpha: 0.12)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(24),
+                          color: active ? const Color(0xFFFBECE1) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         child: Icon(
                           active ? item.activeIcon : item.icon,
-                          color: active
-                              ? activeColor
-                              : AppColors.navInactive,
-                          size: 24,
+                          size: 22,
+                          color: active ? const Color(0xFF8C3B00) : const Color(0xFF7B6B61),
                         ),
                       ),
                       const SizedBox(height: 2),
-                      AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 200),
-                        style: AppTextStyles.navLabel.copyWith(
-                          color: active
-                              ? activeColor
-                              : AppColors.navInactive,
-                          fontWeight: active
-                              ? FontWeight.w700
-                              : FontWeight.w400,
-                        ),
-                        child: Text(
-                          isHindi ? item.labelHi : item.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        item.label,
+                        style: GoogleFonts.outfit(
+                          fontSize: 11,
+                          fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                          color: active ? const Color(0xFF8C3B00) : const Color(0xFF7B6B61),
                         ),
                       ),
                     ],

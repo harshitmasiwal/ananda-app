@@ -22,70 +22,76 @@ class _DevotionalPalette {
     required this.orb2Color,
   });
 
+  // Home: warm cream parchment base with very soft amber glow
   static const home = _DevotionalPalette(
     gradientColors: [
-      Color(0xFFFFF6ED),
-      Color(0xFFFFEDE0),
-      Color(0xFFFFDFCE),
-      Color(0xFFFFF8F2),
+      Color(0xFFFBEDD5), // warm cream parchment
+      Color(0xFFF8E5C8),
+      Color(0xFFF5DDB8),
+      Color(0xFFFAECD0),
     ],
-    orb1Color: Color(0x38FF6F00), // warm amber glow
-    orb2Color: Color(0x32FFD54F), // golden light
+    orb1Color: Color(0x30C4611A), // amber glow
+    orb2Color: Color(0x28D4A017), // gold shimmer
   );
 
+  // Bhajans: same warm cream but with richer amber orbs
   static const bhajans = _DevotionalPalette(
     gradientColors: [
-      Color(0xFFFAF5FF),
-      Color(0xFFF3E8FF),
-      Color(0xFFEDE9FE),
-      Color(0xFFFAF7FF),
+      Color(0xFFFBEDD5),
+      Color(0xFFF8E5C8),
+      Color(0xFFF0D8B0),
+      Color(0xFFFAECD0),
     ],
-    orb1Color: Color(0x309C27B0), // royal purple glow
-    orb2Color: Color(0x28673AB7), // mystic violet glow
+    orb1Color: Color(0x38C4611A), // deeper amber
+    orb2Color: Color(0x28D4A017), // warm gold
   );
 
+  // Books: warm cream with slight red-brown orbs
   static const books = _DevotionalPalette(
     gradientColors: [
-      Color(0xFFF2F9F5),
-      Color(0xFFE8F5E9),
-      Color(0xFFDCEDC8),
-      Color(0xFFF4FAF6),
+      Color(0xFFFBEDD5),
+      Color(0xFFF8E5C0),
+      Color(0xFFF2DDB0),
+      Color(0xFFFBEDD5),
     ],
-    orb1Color: Color(0x3043A047), // sacred forest green
-    orb2Color: Color(0x2800897B), // sacred teal
+    orb1Color: Color(0x30873010), // amber-brown glow
+    orb2Color: Color(0x28C47010), // golden amber
   );
 
+  // Wallpapers: warm cream with amber glow
   static const wallpapers = _DevotionalPalette(
     gradientColors: [
-      Color(0xFFFFF8F0),
-      Color(0xFFFFECD2),
-      Color(0xFFFFDFBA),
-      Color(0xFFFFF9F2),
+      Color(0xFFFBEDD5),
+      Color(0xFFF8E5C8),
+      Color(0xFFF0DCBA),
+      Color(0xFFFAECD0),
     ],
-    orb1Color: Color(0x34FB8C00), // radiant dawn amber
-    orb2Color: Color(0x2EF4511E), // deep saffron accent
+    orb1Color: Color(0x30C4611A),
+    orb2Color: Color(0x22D4A017),
   );
 
+  // Ringtones: warm cream with slight purple-amber orbs
   static const ringtones = _DevotionalPalette(
     gradientColors: [
-      Color(0xFFFAF5FF),
-      Color(0xFFEDE7F6),
-      Color(0xFFF3E5F5),
-      Color(0xFFFAF6FE),
+      Color(0xFFFBEDD5),
+      Color(0xFFF8E5C8),
+      Color(0xFFF0DCBA),
+      Color(0xFFFBEDD5),
     ],
-    orb1Color: Color(0x307E57C2), // spiritual violet
-    orb2Color: Color(0x28AB47BC), // melodic magenta
+    orb1Color: Color(0x2A7B1E8A), // soft purple
+    orb2Color: Color(0x28C4611A), // amber accent
   );
 
+  // Horoscope: warm cream with indigo-purple cosmic orbs
   static const horoscope = _DevotionalPalette(
     gradientColors: [
-      Color(0xFFF0F4FA),
-      Color(0xFFE8EAF6),
-      Color(0xFFE1F5FE),
-      Color(0xFFF3F6FB),
+      Color(0xFFFBEDD5),
+      Color(0xFFF5E0C8),
+      Color(0xFFEED8C0),
+      Color(0xFFFBEDD5),
     ],
-    orb1Color: Color(0x303949AB), // celestial cosmic indigo
-    orb2Color: Color(0x280288D1), // starlight blue
+    orb1Color: Color(0x2C4A1B7A), // cosmic indigo
+    orb2Color: Color(0x207B1E1E), // maroon accent
   );
 
   static _DevotionalPalette forMode(DevotionalMode mode) {
@@ -125,11 +131,8 @@ class _DevotionalPalette {
   }
 }
 
-/// An animated living devotional background featuring gentle drifting gradient shifts
-/// and breathing glowing ambient orbs.
-///
-/// Can be driven by a [PageController] (for seamless swiping between tabs in MainShell)
-/// or by an explicit [DevotionalMode].
+/// Animated devotional background — warm cream parchment with drifting amber/gold orbs.
+/// Matches the screenshot's cream lower section aesthetic.
 class AnimatedDevotionalBackground extends StatefulWidget {
   final Widget child;
   final DevotionalMode mode;
@@ -224,19 +227,34 @@ class _AnimatedDevotionalBackgroundState
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ambientCtrl,
-      builder: (context, staticChild) {
-        final palette = _currentPalette();
-        return CustomPaint(
-          painter: _DevotionalBackgroundPainter(
-            animationValue: _ambientCtrl.value,
-            palette: palette,
+    return Stack(
+      children: [
+        // 1. Majestic temple sunset & sacred ghats parchment background
+        Positioned.fill(
+          child: Image.asset(
+            'assets/images/temple_sunset_bg.jpg',
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
           ),
-          child: staticChild,
-        );
-      },
-      child: widget.child,
+        ),
+        // 2. Animated floating ambient glow orbs & subtle devotional tone overlay
+        Positioned.fill(
+          child: AnimatedBuilder(
+            animation: _ambientCtrl,
+            builder: (context, _) {
+              final palette = _currentPalette();
+              return CustomPaint(
+                painter: _DevotionalBackgroundPainter(
+                  animationValue: _ambientCtrl.value,
+                  palette: palette,
+                ),
+              );
+            },
+          ),
+        ),
+        // 3. Screen content
+        widget.child,
+      ],
     );
   }
 }
@@ -254,7 +272,7 @@ class _DevotionalBackgroundPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
 
-    // 1. Drifting primary linear ambient gradient
+    // 1. Drifting subtle ambient gradient overlay
     final sinVal = math.sin(animationValue * math.pi);
     final cosVal = math.cos(animationValue * math.pi);
 
@@ -271,18 +289,19 @@ class _DevotionalBackgroundPainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: beginAlignment,
         end: endAlignment,
-        colors: palette.gradientColors,
+        colors: palette.gradientColors
+            .map((c) => c.withValues(alpha: 0.12))
+            .toList(),
       ).createShader(rect);
 
     canvas.drawRect(rect, backgroundPaint);
 
-    // 2. Floating Ambient Glow Orb 1 (Top-Right drifting gently)
+    // 2. Floating Ambient Glow Orb 1 (Top-Right)
     final orb1Center = Offset(
       size.width * 0.82 + 25.0 * math.cos(animationValue * 2 * math.pi),
       size.height * 0.22 + 20.0 * math.sin(animationValue * 2 * math.pi),
     );
-    final orb1Radius =
-        (size.width * 0.55) * (1.0 + 0.12 * sinVal);
+    final orb1Radius = (size.width * 0.55) * (1.0 + 0.12 * sinVal);
 
     final orb1Paint = Paint()
       ..shader = RadialGradient(
@@ -296,13 +315,12 @@ class _DevotionalBackgroundPainter extends CustomPainter {
 
     canvas.drawCircle(orb1Center, orb1Radius, orb1Paint);
 
-    // 3. Floating Ambient Glow Orb 2 (Bottom-Left drifting gently)
+    // 3. Floating Ambient Glow Orb 2 (Bottom-Left)
     final orb2Center = Offset(
       size.width * 0.15 - 20.0 * math.sin(animationValue * 2 * math.pi),
       size.height * 0.72 + 25.0 * math.cos(animationValue * 2 * math.pi),
     );
-    final orb2Radius =
-        (size.width * 0.65) * (1.0 + 0.10 * cosVal);
+    final orb2Radius = (size.width * 0.65) * (1.0 + 0.10 * cosVal);
 
     final orb2Paint = Paint()
       ..shader = RadialGradient(

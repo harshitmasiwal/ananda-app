@@ -248,6 +248,9 @@ class AudioPlayerService {
   }
 
   Future<void> seekTo(Duration pos) => _player.seek(pos);
+  Future<void> seek(Duration pos) => _player.seek(pos);
+  Future<void> skipToNext() => skipNext();
+  Future<void> skipToPrevious() => skipPrev();
 
   // ── Skip ──────────────────────────────────────────────────────────────────
 
